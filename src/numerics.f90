@@ -6,4 +6,5 @@ module numerics
 
     integer, parameter :: rp = real64 ! double precision
     real(rp), parameter :: pi = acos(-1._rp) ! nombre pi
+    real(rp), parameter :: g = 10._rp ! constante gravitation
 end module numerics

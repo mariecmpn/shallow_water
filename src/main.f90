@@ -1,9 +1,9 @@
 program systeme_trafic
     use numerics
     use initialisation_sauvegarde
-    use schemas_2d
+    use schemas
     IMPLICIT NONE
-    real(rp) :: x_deb, x_fin, v_max, rho_max
+    real(rp) :: x_deb, x_fin
     integer :: Ns
     real(rp) :: CFL, T_fin, date, dt, dx
     real(rp) :: a, Delta, x
@@ -19,12 +19,12 @@ program systeme_trafic
     integer :: Nb_iter = 0
 
     write(6,*) '------------------------------------------'
-    write(6,*) '--------- Modele trafic routier ----------'
-    write(6,*) '---------------- Systeme -----------------'
+    write(6,*) '----------- Resolution syteme ------------'
+    write(6,*) '------------- SHALLOW-WATER --------------'
     write(6,*) '------------------------------------------'
 
     ! lecture des donnees du fichier donnees.dat
-    call lecture_donnees_syst('donnees_2d.dat', x_deb, x_fin, Ns, CFL, T_fin, condition, schema, v_max, rho_max, fonc)
+    call lecture_donnees_syst('init.dat', x_deb, x_fin, Ns, CFL, T_fin, condition, schema, fonc)
 
     dx = (x_fin - x_deb)/Ns
 
@@ -38,10 +38,10 @@ program systeme_trafic
     date = 0._rp
     do while (date < T_fin)
         ! CFL (raccourci u_i^n + rho_i^n*p'(rho_i^n) pour max des valeurs propres)
-        a = abs(W_O(2,1) - W_O(1,1) * p_prime(W_O(1,1), v_max, rho_max))
-        a = max(a,abs(W_O(2,1)))
+        a = abs(lambda_1(W_O(:,1)))
+        a = max(a,abs(lambda_2(W_O(:,1))))
         do i = 2,Ns
-            a = max(a, abs(W_O(2,i) - W_O(1,i) * p_prime(W_O(1,i), v_max, rho_max)), abs(W_O(2,i)))
+            a = max(a, abs(lambda_1(W_O(:,i))), abs(lambda_2(W_O(:,i))))
         end do
         dt = dx*CFL/a
         dt = min(dt, T_fin - date)
@@ -49,14 +49,14 @@ program systeme_trafic
 
 
         ! on etait en variables primitives donc on passe en variables conservatives
-        call prim_to_conserv(W_O, Ns, v_max, rho_max)
+        call prim_to_conserv(W_O, Ns)
         ! calcul des flux
         if (schema == 'LF') then
-            call flux_LF_syst(Ns, Flux, W_O, dt, dx, v_max, rho_max)
-        else if (schema == 'RS') then
-            call flux_RS_syst(Ns, Flux, W_O, v_max, rho_max)
-        else if (schema == 'HL') then
-            call flux_HLL_syst(Ns, Flux, W_O, v_max, rho_max)
+            call flux_LF_syst(Ns, Flux, W_O, dt, dx)
+        !else if (schema == 'RS') then
+        !    call flux_RS_syst(Ns, Flux, W_O, v_max, rho_max)
+        !else if (schema == 'HL') then
+         !   call flux_HLL_syst(Ns, Flux, W_O, v_max, rho_max)
         !else if (schema == 1) then
         !    call flux_MR(Ns, Flux, W_O)
         !else if (schema == 2) then
@@ -97,33 +97,25 @@ program systeme_trafic
         Nb_iter = Nb_iter + 1
 
         ! on etait en variables conservatives donc on passe en variables primitives pour le calcul de la CFL, ou pour la sauvegarde des donnees si derniere iteration
-        call conserv_to_prim(W_O, Ns, v_max, rho_max)
-    end do
-
-    ! Calcul solution exacte et de l'erreur
-    do i = 1,Ns
-        x = x_deb + i*(x_fin-x_deb)/Ns
-        W_ex(:,i) = sol_ex_syst(x, date, fonc, v_max, rho_max)
-        Err_rho(i) = abs(W_ex(1,i) - W_O(1,i))
-        Err_u(i) = abs(W_ex(2,i) - W_O(2,i))
+        call conserv_to_prim(W_O, Ns)
     end do
 
     write(6,*) 'Nombre d iterations', Nb_iter
     write(6,*)
     write(6,*) 'Nombre de cellules: ', Ns
-    write(6,*) 'Erreurs L2 entre solution approchee et solution exacte: ' 
-    write(6,*) 'Pour rho: ', norme_L2(Err_rho, Ns)
-    write(6,*) 'Pour u: ', norme_L2(Err_u, Ns)
-    write(6,*) 'Erreurs L2 des solutions approchees: ' 
-    write(6,*) 'Pour rho: ', norme_L2(W_O(1,:), Ns)
-    write(6,*) 'Pour u: ', norme_L2(W_O(2,:), Ns)
+    !write(6,*) 'Erreurs L2 entre solution approchee et solution exacte: ' 
+    !write(6,*) 'Pour rho: ', norme_L2(Err_rho, Ns)
+    !write(6,*) 'Pour u: ', norme_L2(Err_u, Ns)
+    !write(6,*) 'Erreurs L2 des solutions approchees: ' 
+    !write(6,*) 'Pour rho: ', norme_L2(W_O(1,:), Ns)
+    !write(6,*) 'Pour u: ', norme_L2(W_O(2,:), Ns)
     write(6,*)
     
     ! on sauvegarde les resultats pour t = T_fin
-    call sauvegarde_syst('solution_rho.dat','solution_u.dat', W_O, Ns, x_deb, x_fin)
+    call sauvegarde_syst('solution_h.dat','solution_u.dat', W_O, Ns, x_deb, x_fin)
 
     ! on sauvegarde la fonction exacte pour t = T_fin
-    call sauvegarde_syst('solution_rho_ex.dat', 'solution_u_ex.dat', W_ex, Ns, x_deb, x_fin)
+    !call sauvegarde_syst('solution_rho_ex.dat', 'solution_u_ex.dat', W_ex, Ns, x_deb, x_fin)
 
     deallocate(W_O, W_N, Flux, Err_u, Err_rho, W_ex)
 

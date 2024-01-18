@@ -1,14 +1,14 @@
-module schemas_2d
+module schemas
     use numerics
     use initialisation_sauvegarde
     IMPLICIT NONE
 
     contains
 
-    subroutine flux_LF_syst(Ns, Flux, W_O, dt, dx, v_max, rho_max)
+    subroutine flux_LF_syst(Ns, Flux, W_O, dt, dx)
     ! FLUX POUR SCHEMA DE LAX-FRIEDRICHS
         IMPLICIT NONE
-        real(rp), intent(in) :: dt, dx, v_max, rho_max
+        real(rp), intent(in) :: dt, dx
         integer, intent(in) :: Ns
         real(rp), dimension(2,Ns), intent(inout) :: Flux
         real(rp), dimension(2,Ns), intent(in) :: W_O
@@ -18,9 +18,9 @@ module schemas_2d
 
         ! calcul flux pour Lax-Friedrichs
         Delta = (dx / dt) * 0.5_rp
-        call F(F_ex1, W_O(:,1), v_max, rho_max)
+        call F(F_ex1, W_O(:,1))
         do i = 1,(Ns-1)
-            call F(F_ex, W_O(:,(i+1)), v_max, rho_max)
+            call F(F_ex, W_O(:,(i+1)))
             Flux(1,i) = 0.5_rp*(F_ex(1) + F_ex1(1)) - Delta * (W_O(1,i+1) - W_O(1,i))
             Flux(2,i) = 0.5_rp*(F_ex(2) + F_ex1(2)) - Delta * (W_O(2,i+1) - W_O(2,i))
             F_ex1(:) = F_ex(:)
@@ -68,14 +68,14 @@ module schemas_2d
         real(rp) :: Delta
         integer :: i
 
-        call F(F_ex1, W_O(:,1), v_max, rho_max)
+        call F(F_ex1, W_O(:,1))
         do i = 1,(Ns-1)
-            call F(F_ex, W_O(:,(i+1)), v_max, rho_max)
+            call F(F_ex, W_O(:,(i+1)))
             ! max des valeurs propres
-            Delta = abs(vitesse(W_O(:,i), v_max, rho_max)-W_O(1,i)*p_prime(W_O(1,i),v_max,rho_max)) ! lambda_1 de W_L
-            Delta = max(Delta,abs(vitesse(W_O(:,i+1), v_max, rho_max)-W_O(1,i+1)*p_prime(W_O(1,i+1),v_max,rho_max))) ! lambda_1 de W_R
-            Delta = max(Delta, abs(vitesse(W_O(:,i), v_max, rho_max))) ! lambda_2 de W_L
-            Delta = max(Delta, abs(vitesse(W_O(:,i+1), v_max, rho_max))) ! lambda_2 de W_R
+            Delta = abs(lambda_1(W_O(:,i))) ! lambda_1 de W_L
+            Delta = max(Delta, abs(lambda_1(W_O(:,i+1)))) ! lambda_1 de W_R
+            Delta = max(Delta, abs(lambda_2(W_O(:,i)))) ! lambda_2 de W_L
+            Delta = max(Delta, abs(lambda_2(W_O(:,i+1)))) ! lambda_2 de W_R
             Flux(1,i) = 0.5_rp*(F_ex(1) + F_ex1(1)) - 0.5_rp*Delta * (W_O(1,i+1) - W_O(1,i))
             Flux(2,i) = 0.5_rp*(F_ex(2) + F_ex1(2)) - 0.5_rp*Delta * (W_O(2,i+1) - W_O(2,i))
             F_ex1(:) = F_ex(:)
@@ -95,28 +95,28 @@ module schemas_2d
     
             do i=1,Ns-1
                 ! on calcule b_l et b_r
-                bl = vitesse(W_O(:,i), v_max, rho_max)-W_O(1,i)*p_prime(W_O(1,i),v_max,rho_max)
-                bl = min(bl, vitesse(W_O(:,i+1), v_max, rho_max)-W_O(1,i+1)*p_prime(W_O(1,i+1),v_max,rho_max))
-                bl = min(bl, vitesse(W_O(:,i), v_max, rho_max))
-                bl = min(bl, vitesse(W_O(:,i+1), v_max, rho_max))
-                br = vitesse(W_O(:,i), v_max, rho_max)-W_O(1,i)*p_prime(W_O(1,i),v_max,rho_max)
-                br = max(bl, vitesse(W_O(:,i+1), v_max, rho_max)-W_O(1,i+1)*p_prime(W_O(1,i+1),v_max,rho_max))
-                br = max(bl, vitesse(W_O(:,i), v_max, rho_max))
-                br = max(bl, vitesse(W_O(:,i+1), v_max, rho_max))
-                if (bl >= 0) then
-                    call F(F_ex, W_O(:,(i)), v_max, rho_max)
-                    Flux(:,i) = F_ex(:)
-                else if (bl<0 .AND. br>=0) then
-                    call F(F_ex, W_O(:,(i)), v_max, rho_max)
-                    call F(F_ex1, W_O(:,(i+1)), v_max, rho_max)
-                    Flux(1,i) = (br*F_ex1(1)-bl*F_ex(1)+(bl*br)*(W_O(1,i+1)-W_O(1,i)))/(br-bl)
-                    Flux(2,i) = (br*F_ex1(2)-bl*F_ex(2)+(bl*br)*(W_O(2,i+1)-W_O(2,i)))/(br-bl)
-                else if (br < 0) then
-                    call F(F_ex, W_O(:,(i+1)), v_max, rho_max)
-                    Flux(:,i) = F_ex(:)
-                else
-                    write(6,*) 'Probleme de calcul de vitesse pour flux HLL'
-                end if
+                !bl = vitesse(W_O(:,i), v_max, rho_max)-W_O(1,i)*p_prime(W_O(1,i),v_max,rho_max)
+                !bl = min(bl, vitesse(W_O(:,i+1), v_max, rho_max)-W_O(1,i+1)*p_prime(W_O(1,i+1),v_max,rho_max))
+                !bl = min(bl, vitesse(W_O(:,i), v_max, rho_max))
+                !bl = min(bl, vitesse(W_O(:,i+1), v_max, rho_max))
+                !br = vitesse(W_O(:,i), v_max, rho_max)-W_O(1,i)*p_prime(W_O(1,i),v_max,rho_max)
+                !br = max(bl, vitesse(W_O(:,i+1), v_max, rho_max)-W_O(1,i+1)*p_prime(W_O(1,i+1),v_max,rho_max))
+                !br = max(bl, vitesse(W_O(:,i), v_max, rho_max))
+                !br = max(bl, vitesse(W_O(:,i+1), v_max, rho_max))
+                !if (bl >= 0) then
+                !    call F(F_ex, W_O(:,(i)), v_max, rho_max)
+                !    Flux(:,i) = F_ex(:)
+                !else if (bl<0 .AND. br>=0) then
+                !    call F(F_ex, W_O(:,(i)), v_max, rho_max)
+                !    call F(F_ex1, W_O(:,(i+1)), v_max, rho_max)
+                !    Flux(1,i) = (br*F_ex1(1)-bl*F_ex(1)+(bl*br)*(W_O(1,i+1)-W_O(1,i)))/(br-bl)
+                !    Flux(2,i) = (br*F_ex1(2)-bl*F_ex(2)+(bl*br)*(W_O(2,i+1)-W_O(2,i)))/(br-bl)
+                !else if (br < 0) then
+                !    call F(F_ex, W_O(:,(i+1)), v_max, rho_max)
+                !    Flux(:,i) = F_ex(:)
+                !else
+                !    write(6,*) 'Probleme de calcul de vitesse pour flux HLL'
+                !end if
             end do
         end subroutine flux_HLL_syst
 
@@ -153,4 +153,4 @@ module schemas_2d
             end subroutine flux_MR_syst
 
 
-end module schemas_2d
+end module schemas

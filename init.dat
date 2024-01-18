@@ -1,0 +1,7 @@
+-5.0 5.0 :: x_debut et x_fin
+1000 :: Nombre de points de maillage en x
+0.5 :: Condition CFL
+0.1 :: Temps final
+N :: condition aux bords: N pour Neumann, D pour Dirichlet. Default: Dirichlet
+LF :: Schema utilise: LF pour Lax-Friedrichs
+1 :: Fonction condition initiale utilisee

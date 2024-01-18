@@ -12,11 +12,11 @@ ODIR = ../bin
 EXEDIR = ..
 
 # Liste des fichiers binaires
-OBJS = $(ODIR)/main.o $(ODIR)/schemas.o $(ODIR)/initialisation.o $(ODIR)/numerics.o
+OBJS = $(ODIR)/main.o $(ODIR)/schemas.o $(ODIR)/init_posttraitement.o $(ODIR)/numerics.o
 
 # Pour le modele scalaire
 shallowwater: $(OBJS)
-	$(FC) $(FFLAGS) $(OBJS) -o $(EXEDIR)/trafic_scalaire
+	$(FC) $(FFLAGS) $(OBJS) -o $(EXEDIR)/shallowwater
 
 
 # regle clean pour supprimer les fichiers binaires et executable
