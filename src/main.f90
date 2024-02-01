@@ -1,12 +1,12 @@
 program systeme_trafic
     use numerics
     use initialisation_sauvegarde
-    use schemas
+    use schemasSH
     IMPLICIT NONE
     real(rp) :: x_deb, x_fin
     integer :: Ns
     real(rp) :: CFL, T_fin, date, dt, dx
-    real(rp) :: a, Delta, x
+    real(rp) :: v, Delta, x
     integer :: i
     real(rp), dimension(:,:), allocatable :: W_O
     real(rp), dimension(:,:), allocatable :: W_N
@@ -23,8 +23,12 @@ program systeme_trafic
     write(6,*) '------------- SHALLOW-WATER --------------'
     write(6,*) '------------------------------------------'
 
+    write(6,*)
+
     ! lecture des donnees du fichier donnees.dat
     call lecture_donnees_syst('init.dat', x_deb, x_fin, Ns, CFL, T_fin, condition, schema, fonc)
+
+    write(6,*)
 
     dx = (x_fin - x_deb)/Ns
 
@@ -38,12 +42,12 @@ program systeme_trafic
     date = 0._rp
     do while (date < T_fin)
         ! CFL (raccourci u_i^n + rho_i^n*p'(rho_i^n) pour max des valeurs propres)
-        a = abs(lambda_1(W_O(:,1)))
-        a = max(a,abs(lambda_2(W_O(:,1))))
+        v = abs(lambda_1(W_O(:,1)))
+        v = max(v,abs(lambda_2(W_O(:,1))))
         do i = 2,Ns
-            a = max(a, abs(lambda_1(W_O(:,i))), abs(lambda_2(W_O(:,i))))
+            v = max(v, abs(lambda_1(W_O(:,i))), abs(lambda_2(W_O(:,i))))
         end do
-        dt = dx*CFL/a
+        dt = dx*CFL/v
         dt = min(dt, T_fin - date)
         date = date + dt
 
@@ -53,10 +57,10 @@ program systeme_trafic
         ! calcul des flux
         if (schema == 'LF') then
             call flux_LF_syst(Ns, Flux, W_O, dt, dx)
-        !else if (schema == 'RS') then
-        !    call flux_RS_syst(Ns, Flux, W_O, v_max, rho_max)
-        !else if (schema == 'HL') then
-         !   call flux_HLL_syst(Ns, Flux, W_O, v_max, rho_max)
+        else if (schema == 'RS') then
+            call flux_RS_syst(Ns, Flux, W_O)
+        else if (schema == 'HL') then
+            call flux_HLL_syst(Ns, Flux, W_O)
         !else if (schema == 1) then
         !    call flux_MR(Ns, Flux, W_O)
         !else if (schema == 2) then

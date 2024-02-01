@@ -95,6 +95,11 @@ module initialisation_sauvegarde
         read(my_unit, *) schema
         read(my_unit, *) fonc
 
+        write(6,*)
+        write(6,*) 'Calcul entre x_deb = ', x_deb, ' et x_fin = ', x_fin
+        write(6,*) 'Nombre de points de maillage: ', Ns
+        write(6,*) 'Temps final: ', T_fin
+
         if (schema == 'LF') then ! Lax-Friedrichs
             write(6,*) "Schema utilise: Lax_Friedrichs"
         else if (schema == 'RS') then ! Rusanov
@@ -190,7 +195,6 @@ module initialisation_sauvegarde
         lambda_1 = W(2) - sqrt(g*W(1))
     end function lambda_1
 
-
     real(rp) function lambda_2(W)
         ! fonction pour la valeur propre 1 du systeme
         ! En variables primitives
@@ -198,15 +202,48 @@ module initialisation_sauvegarde
         lambda_2 = W(2) + sqrt(g*W(1))
     end function lambda_2
 
+    real(rp) function lambda_1_cons(W)
+        ! fonction pour la valeur propre 1 du systeme
+        ! En variables conservatives
+        real(rp), dimension(2) :: W
+        lambda_1_cons = W(2)/W(1) - sqrt(g*W(1))
+    end function lambda_1_cons
 
-    subroutine F(F_ex, W)
-        ! subroutine pour calculer la fonction F flux exact
+    real(rp) function lambda_2_cons(W)
+        ! fonction pour la valeur propre 1 du systeme
+        ! En variables conservatives
+        real(rp), dimension(2) :: W
+        lambda_2_cons = W(2)/W(1) + sqrt(g*W(1))
+    end function lambda_2_cons
+
+    function A(W)
+        ! matrice A en variables primitives
+        real(rp), dimension(2,2) :: A
+        real(rp), dimension(2) :: W
+        A(1,1) = W(2)
+        A(1,2) = W(1)
+        A(2,1) = g
+        A(2,2) = W(2)
+    end function A
+
+    function grad_F(W)
+        ! matrice gradient de F en variables conservatives
+        real(rp), dimension(2,2) :: grad_F
+        real(rp), dimension(2) :: W
+        grad_F(1,1) = 0._rp
+        grad_F(1,2) = 1._rp
+        grad_F(2,1) = -(W(2)/W(1))**2+g*W(1)
+        grad_F(2,2) = 2.*(W(2)/W(1))
+    end function grad_F
+
+    function F(W)
+        ! fonction pour calculer la fonction F flux exact
         ! W en variables conservatives
-        real(rp), dimension(2), intent(in) :: W
-        real(rp), dimension(2), intent(inout) :: F_ex
-        F_ex(1) = W(2)
-        F_ex(2) = (W(2)**2)/W(1) + 0.5_rp*g*W(1)**2
-    end subroutine F
+        real(rp), dimension(2) :: W
+        real(rp), dimension(2) :: F
+        F(1) = W(2)
+        F(2) = (W(2)**2)/W(1) + 0.5_rp*g*W(1)**2
+    end function F
 
     real(rp) function norme_L2(U, Ns)
         integer :: Ns
