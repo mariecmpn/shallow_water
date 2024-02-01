@@ -1,7 +1,7 @@
 program systeme_trafic
     use numerics
     use initialisation_sauvegarde
-    use schemasSH
+    use schemasSW
     IMPLICIT NONE
     real(rp) :: x_deb, x_fin
     integer :: Ns
@@ -105,8 +105,7 @@ program systeme_trafic
     end do
 
     write(6,*) 'Nombre d iterations', Nb_iter
-    write(6,*)
-    write(6,*) 'Nombre de cellules: ', Ns
+    !write(6,*)
     !write(6,*) 'Erreurs L2 entre solution approchee et solution exacte: ' 
     !write(6,*) 'Pour rho: ', norme_L2(Err_rho, Ns)
     !write(6,*) 'Pour u: ', norme_L2(Err_u, Ns)

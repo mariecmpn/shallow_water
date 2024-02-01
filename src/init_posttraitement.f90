@@ -95,7 +95,6 @@ module initialisation_sauvegarde
         read(my_unit, *) schema
         read(my_unit, *) fonc
 
-        write(6,*)
         write(6,*) 'Calcul entre x_deb = ', x_deb, ' et x_fin = ', x_fin
         write(6,*) 'Nombre de points de maillage: ', Ns
         write(6,*) 'Temps final: ', T_fin

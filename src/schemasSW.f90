@@ -1,4 +1,4 @@
-module schemasSH
+module schemasSW
     use numerics
     use initialisation_sauvegarde
     IMPLICIT NONE
@@ -94,7 +94,6 @@ module schemasSH
             real(rp) :: l
             !real(rp) :: bl, br
 
-            call F(F_ex1, W_O(:,1))
             do i=1,Ns-1
                 ! on calcule b_l et b_r
                 !bl = min(lambda_1_cons(W_O(:,i)),lambda_1_cons(W_O(:,i+1)))
@@ -115,7 +114,8 @@ module schemasSH
                 !else
                 !    write(6,*) 'Probleme de calcul de coef pour flux HLL'
                 !end if
-                l = max(lambda_2_cons(W_O(:,i)),lambda_2_cons(W_O(:,i+1)))  
+                l = max(lambda_2_cons(W_O(:,i)),lambda_2_cons(W_O(:,i+1)))
+                write(6,*) 'l = ', l
                 Flux(:,i) = 0.5_rp*(F(W_O(:,i)) + F(W_O(:,i+1))) - 0.5_rp*l*(W_O(:,i)-W_O(:,i+1))
             end do
         end subroutine flux_HLL_syst
@@ -153,4 +153,4 @@ module schemasSH
             end subroutine flux_MR_syst
 
 
-end module schemasSH
+end module schemasSW
