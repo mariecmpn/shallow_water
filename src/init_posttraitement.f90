@@ -46,32 +46,42 @@ module initialisation_sauvegarde
 
     ! Fonction condition initiale qui prend en compte la fonction demandee
 
-    real(rp) function initial_u(x,fonc)
+    real(rp) function initial_u(x, uL, uR)
         ! fonction condition initiale pour u
-        real(rp) :: x
-        integer :: fonc
-        if (fonc == 1) then
-            initial_u = choc_u0(x)
-        else 
-            initial_u = det_u0(x)
+        real(rp) :: x, uL, uR
+        if (x < 0.) then
+            initial_u = uL
+        else
+            initial_u = uR
         end if
+        !integer :: fonc
+        !if (fonc == 1) then
+        !    initial_u = choc_u0(x)
+        !else 
+        !    initial_u = det_u0(x)
+        !end if
     end function initial_u
 
 
-    real(rp) function initial_h(x, fonc)
+    real(rp) function initial_h(x, hL, hR)
         ! fonction condition initiale pour rho
-        real(rp) :: x
-        integer :: fonc
-        if (fonc == 1) then
-            initial_h = choc_h0(x)
-        else 
-            initial_h = det_h0(x)
+        real(rp) :: x, hL, hR
+        if (x < 0.) then
+            initial_h = hL
+        else
+            initial_h = hR
         end if
+        !integer :: fonc
+        !if (fonc == 1) then
+        !    initial_h = choc_h0(x)
+        !else 
+        !    initial_h = det_h0(x)
+        !end if
     end function initial_h
 
     ! Lecture des donnees, initialisation et sauvegarde
 
-    subroutine lecture_donnees_syst(file_name, x_deb, x_fin, Ns, CFL, T_fin, condition, schema, fonc)
+    subroutine lecture_donnees_syst(file_name, x_deb, x_fin, Ns, CFL, T_fin, condition, schema, uL, uR, hL, hR)
         ! Subroutine pour recuperer les donnees du fichier file_name
         IMPLICIT NONE
         character(len = *), intent(in) :: file_name ! nom du fichier a ouvrir
@@ -80,7 +90,8 @@ module initialisation_sauvegarde
         real(rp), intent(inout) :: CFL ! condition CFL
         real(rp), intent(inout) :: T_fin ! temps final
         character(len = 1), intent(inout) :: condition ! condition aux bords
-        integer, intent(inout) :: fonc ! fonction initiale utilisee
+        !integer, intent(inout) :: fonc ! fonction initiale utilisee
+        real(rp), intent(inout) :: uL, uR, hL, hR
         character(len = 2), intent(inout) :: schema ! schema utilise
 
         integer :: my_unit
@@ -93,7 +104,9 @@ module initialisation_sauvegarde
         read(my_unit, *) T_fin
         read(my_unit, *) condition
         read(my_unit, *) schema
-        read(my_unit, *) fonc
+        !read(my_unit, *) fonc
+        read(my_unit, *) hL, hR
+        read(my_unit, *) uL, uR
 
         write(6,*) 'Calcul entre x_deb = ', x_deb, ' et x_fin = ', x_fin
         write(6,*) 'Nombre de points de maillage: ', Ns
@@ -117,12 +130,13 @@ module initialisation_sauvegarde
     end subroutine lecture_donnees_syst
 
 
-    subroutine initialisation_syst(W_O, Ns, x_deb, x_fin, fonc)
+    subroutine initialisation_syst(W_O, Ns, x_deb, x_fin, uL, uR, hL, hR)
         ! suboutine pour initialiser le probleme
         IMPLICIT NONE
-        integer, intent(in) :: Ns, fonc ! nmbre de cellules, fonction utilisee
+        integer, intent(in) :: Ns ! nmbre de cellules, fonction utilisee
         real(rp), dimension(2,1:Ns), intent(inout) :: W_O ! tableau qu'on initialise
         real(rp), intent(in) :: x_deb, x_fin ! debut et fin des x
+        real(rp), intent(in) :: uL, uR, hL, hR
         real(rp) :: x
         integer :: i
         real(rp) :: deltax
@@ -130,8 +144,8 @@ module initialisation_sauvegarde
         deltax = (x_fin-x_deb)/Ns
         do i = 1,Ns
             x = x_deb + i*deltax
-            W_O(1,i) = initial_h(x, fonc)
-            W_O(2,i) = initial_u(x, fonc)
+            W_O(1,i) = initial_h(x, hL, hR)
+            W_O(2,i) = initial_u(x, uL, uR)
         end do
     end subroutine initialisation_syst
 

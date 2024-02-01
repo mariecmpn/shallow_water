@@ -1,0 +1,34 @@
+RESOLUTION OF THE RIEMANN PROBLEM ON SHALLOW WATER EQUATIONS USING A FINITE VOLUME METHOD
+(Résolution du problème de Riemann pour les équations de St-Venant (Shallow Water) par une méthode volumes finis)
+
+Author: Marie COMPAIN
+
+Compilation: (English below)
+Aller dans le dossier src puis faire make. Le fichier exécutable sera stocké dans le dossier principal du code. 
+
+Options d'exécution:
+Plusieurs options sont disponibles pour ce code. On les définit dans le fichier init.dat:
+- x_deb x_fin : définition de l'intervalle de définition des x (réels double précision).
+- Ns : nombre de cellules (entier).
+- CFL : condition CFL pour le maillage en temps. Dépend du schéma utilisé, en général CFL = 0.5 (réel double précision).
+- T_fin : temps final pour lequel on enregistrera les données des solutions (réel double précision).
+- N : type de condition aux bords. N pour Neumann, D pour Dirichlet. Par défaut le code utilise des conditions de Neumann (chaîne de caractère de longueur 1).
+- SH : Schema utilisé. Sont disponibles et opérationnels: LF pour le schéma de Lax-Friedrichs, RS pour le schéma de Rusanov (chaîne de caractère de longueur 2).
+- hL hR : choix de la condition initiale sur h pour le problème de Riemann: h_0 = hL si x<0 ; hR sinon (réels double précision).
+- uL uR : choix de la condition initiale sur u pour le problème de Riemann (réels double précision).
+
+English translation: 
+
+Compilation:
+You must go in the folder src and tap make. The executable file will be stored in the principal folder of the code.
+
+Execution options:
+Several options are available for this code. They have to be defined in the file init.dat:
+- x_deb x_fin : definition of the definition range of x (double precision reals).
+- Ns : number of cells (integer).
+- CFL : CFL condition for the time mesh. Depends on the scheme that is used, but generally it's CFL = 0.5 (double precision real).
+- T_fin : final time for which we save the solution data (double precision real).
+- N : type of boundary condition. N for Neumann, D for Dirichlet. By default the code uses Neumann conditions (character string of length 1).
+- SH: used scheme. Are available and operating: LF for Lax-Friedrichs scheme, RS for Rusanov scheme (character string of length 2).
+- hL hR : choice of the initial condition on h for the Riemann problem: h_0 = hL if x<0 ; hR else (double precision reals).
+- uL uR : choice of the initial condition on u for the Riemann problem (double precision reals).

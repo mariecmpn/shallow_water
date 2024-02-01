@@ -8,6 +8,7 @@ program systeme_trafic
     real(rp) :: CFL, T_fin, date, dt, dx
     real(rp) :: v, Delta, x
     integer :: i
+    real(rp) :: uL, uR, hL, hR
     real(rp), dimension(:,:), allocatable :: W_O
     real(rp), dimension(:,:), allocatable :: W_N
     real(rp), dimension(:,:), allocatable :: Flux
@@ -15,7 +16,7 @@ program systeme_trafic
     real(rp), dimension(:), allocatable :: Err_u, Err_rho
     character(len = 1) :: condition
     character(len = 2) :: schema
-    integer :: fonc
+    !integer :: fonc
     integer :: Nb_iter = 0
 
     write(6,*) '------------------------------------------'
@@ -26,7 +27,7 @@ program systeme_trafic
     write(6,*)
 
     ! lecture des donnees du fichier donnees.dat
-    call lecture_donnees_syst('init.dat', x_deb, x_fin, Ns, CFL, T_fin, condition, schema, fonc)
+    call lecture_donnees_syst('init.dat', x_deb, x_fin, Ns, CFL, T_fin, condition, schema, uL, uR, hL, hR)
 
     write(6,*)
 
@@ -36,7 +37,7 @@ program systeme_trafic
     allocate(W_O(2,1:Ns), W_N(2,1:Ns), Flux(2,1:(Ns-1)), W_ex(2,1:Ns), Err_u(Ns), Err_rho(Ns))
 
     ! initialisation pour t = 0
-    call initialisation_syst(W_O, Ns, x_deb, x_fin, fonc) ! en variables primitives
+    call initialisation_syst(W_O, Ns, x_deb, x_fin, uL, uR, hL, hR) ! en variables primitives
 
     ! boucle en temps
     date = 0._rp
