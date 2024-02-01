@@ -16,6 +16,7 @@ Plusieurs options sont disponibles pour ce code. On les définit dans le fichier
 - SH : Schema utilisé. Sont disponibles et opérationnels: LF pour le schéma de Lax-Friedrichs, RS pour le schéma de Rusanov (chaîne de caractère de longueur 2).
 - hL hR : choix de la condition initiale sur h pour le problème de Riemann: h_0 = hL si x<0 ; hR sinon (réels double précision).
 - uL uR : choix de la condition initiale sur u pour le problème de Riemann (réels double précision).
+Les résultats sont enregistés dans les fichiers solution_h.dat et solution_u.dat. On peut les visualiser avec Gnuplot par exemple (un exemple de script est disponible).
 
 English translation: 
 
@@ -32,3 +33,4 @@ Several options are available for this code. They have to be defined in the file
 - SH: used scheme. Are available and operating: LF for Lax-Friedrichs scheme, RS for Rusanov scheme (character string of length 2).
 - hL hR : choice of the initial condition on h for the Riemann problem: h_0 = hL if x<0 ; hR else (double precision reals).
 - uL uR : choice of the initial condition on u for the Riemann problem (double precision reals).
+Results are save in the files solution_h.dat and solution_u.dat. You can visualize them with Gnuplot for instance (a script is available).
