@@ -3,6 +3,6 @@
 0.5 :: Condition CFL
 0.1 :: Temps final
 N :: condition aux bords: N pour Neumann, D pour Dirichlet. Default: Dirichlet
-LF :: Schema utilise: LF pour Lax-Friedrichs, RS pour Rusanov, HL pour HLL
+HL :: Schema utilise: LF pour Lax-Friedrichs, RS pour Rusanov, HL pour HLL
 1.0 2.0 :: condition initiale h_0
 3.0 1.0 :: condition initiale u_0

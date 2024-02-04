@@ -18,13 +18,8 @@ module schemasSW
 
         ! calcul flux pour Lax-Friedrichs
         Delta = (dx / dt) * 0.5_rp
-        !call F(F_ex1, W_O(:,1))
         do i = 1,(Ns-1)
-            !call F(F_ex, W_O(:,(i+1)))
-            !Flux(1,i) = 0.5_rp*(F_ex(1) + F_ex1(1)) - Delta * (W_O(1,i+1) - W_O(1,i))
-            !Flux(2,i) = 0.5_rp*(F_ex(2) + F_ex1(2)) - Delta * (W_O(2,i+1) - W_O(2,i))
             Flux(:,i) = 0.5_rp*(F(W_O(:,i)) + F(W_O(:,i+1))) - Delta * (W_O(:,i+1) - W_O(:,i))
-            !F_ex1(:) = F_ex(:)
         end do
     end subroutine flux_LF_syst
 
@@ -64,21 +59,15 @@ module schemasSW
         integer, intent(in) :: Ns
         real(rp), dimension(2,Ns), intent(inout) :: Flux
         real(rp), dimension(2,Ns), intent(in) :: W_O
-        real(rp), dimension(2) :: F_ex1, F_ex
         real(rp) :: Delta
         integer :: i
 
-        !call F(F_ex1, W_O(:,1))
         do i = 1,(Ns-1)
-            !call F(F_ex, W_O(:,(i+1)))
             ! max des valeurs propres
             Delta = abs(lambda_1(W_O(:,i))) ! lambda_1 de W_L
             Delta = max(Delta, abs(lambda_1(W_O(:,i+1)))) ! lambda_1 de W_R
             Delta = max(Delta, abs(lambda_2(W_O(:,i)))) ! lambda_2 de W_L
             Delta = max(Delta, abs(lambda_2(W_O(:,i+1)))) ! lambda_2 de W_R
-            !Flux(1,i) = 0.5_rp*(F_ex(1) + F_ex1(1)) - 0.5_rp*Delta * (W_O(1,i+1) - W_O(1,i))
-            !Flux(2,i) = 0.5_rp*(F_ex(2) + F_ex1(2)) - 0.5_rp*Delta * (W_O(2,i+1) - W_O(2,i))
-            !F_ex1(:) = F_ex(:)
             Flux(:,i) = 0.5_rp*(F(W_O(:,i)) + F(W_O(:,i+1))) - 0.5_rp*Delta * (W_O(:,i+1) - W_O(:,i))
         end do
     end subroutine flux_RS_syst
@@ -89,34 +78,24 @@ module schemasSW
             integer, intent(in) :: Ns
             real(rp), dimension(2,Ns), intent(inout) :: Flux
             real(rp), dimension(2,Ns), intent(in) :: W_O
-            real(rp), dimension(2) :: F_ex1, F_ex
             integer :: i
-            real(rp) :: l
-            !real(rp) :: bl, br
+            real(rp) :: bl, br
 
             do i=1,Ns-1
                 ! on calcule b_l et b_r
-                !bl = min(lambda_1_cons(W_O(:,i)),lambda_1_cons(W_O(:,i+1)))
-                !bl = min(bl,lambda_2_cons(W_O(:,i)),lambda_2_cons(W_O(:,i+1)))
-                !br = max(lambda_1_cons(W_O(:,i)),lambda_1_cons(W_O(:,i+1)))
-                !br = max(br,lambda_2_cons(W_O(:,i)),lambda_2_cons(W_O(:,i+1)))
-                !if (bl >= 0) then
-                !    call F(F_ex, W_O(:,(i)))
-                !    Flux(:,i) = F_ex(:)
-                !else if (bl<0 .AND. br>=0) then
-                !    call F(F_ex, W_O(:,(i)))
-                !    call F(F_ex1, W_O(:,(i+1)))
-                !    Flux(1,i) = (br*F_ex1(1)-bl*F_ex(1)+(bl*br)*(W_O(1,i+1)-W_O(1,i)))/(br-bl)
-                !    Flux(2,i) = (br*F_ex1(2)-bl*F_ex(2)+(bl*br)*(W_O(2,i+1)-W_O(2,i)))/(br-bl)
-                !else if (br < 0) then
-                !    call F(F_ex, W_O(:,(i+1)))
-                !    Flux(:,i) = F_ex(:)
-                !else
-                !    write(6,*) 'Probleme de calcul de coef pour flux HLL'
-                !end if
-                l = max(lambda_2_cons(W_O(:,i)),lambda_2_cons(W_O(:,i+1)))
-                write(6,*) 'l = ', l
-                Flux(:,i) = 0.5_rp*(F(W_O(:,i)) + F(W_O(:,i+1))) - 0.5_rp*l*(W_O(:,i)-W_O(:,i+1))
+                bl = min(lambda_1_cons(W_O(:,i)),lambda_1_cons(W_O(:,i+1))) ! min entre lambda_1(W_L) et lambda_1(W_R)
+                bl = min(bl,lambda_2_cons(W_O(:,i)),lambda_2_cons(W_O(:,i+1))) ! min entre lambda_2(W_L) et lambda_2(W_R)
+                br = max(lambda_1_cons(W_O(:,i)),lambda_1_cons(W_O(:,i+1))) ! max entre lambda_1(W_L) et lambda_1(W_R)
+                br = max(br,lambda_2_cons(W_O(:,i)),lambda_2_cons(W_O(:,i+1))) ! max entre lambda_2(W_L) et lambda_2(W_R)
+                if (bl > 0.) then
+                    Flux(:,i) = F(W_O(:,i))
+                else if (bl<0. .AND. br>0.) then
+                    Flux(:,i) = (br*W_O(:,i) - bl*W_O(:,i+1) + bl*br*(W_O(:,i+1)-W_O(:,i)))/(br-bl)
+                else if (br < 0.) then
+                    Flux(:,i) = F(W_O(:,i+1))
+                else
+                    write(6,*) 'Probleme de calcul de coef pour flux HLL'
+                end if
             end do
         end subroutine flux_HLL_syst
 
