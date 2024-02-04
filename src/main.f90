@@ -116,6 +116,7 @@ program systeme_trafic
     write(6,*)
     
     ! on sauvegarde les resultats pour t = T_fin
+    write(6,*) 'Enregistrement dans les fichiers solution_h.dat et solution_u.dat'
     call sauvegarde_syst('solution_h.dat','solution_u.dat', W_O, Ns, x_deb, x_fin)
 
     ! on sauvegarde la fonction exacte pour t = T_fin

@@ -12,7 +12,6 @@ module schemasSW
         integer, intent(in) :: Ns
         real(rp), dimension(2,Ns), intent(inout) :: Flux
         real(rp), dimension(2,Ns), intent(in) :: W_O
-        !real(rp), dimension(2) :: F_ex1, F_ex
         real(rp) :: Delta
         integer :: i
 

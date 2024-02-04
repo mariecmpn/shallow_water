@@ -13,7 +13,7 @@ Plusieurs options sont disponibles pour ce code. On les définit dans le fichier
 - CFL : condition CFL pour le maillage en temps. Dépend du schéma utilisé, en général CFL = 0.5 (réel double précision).
 - T_fin : temps final pour lequel on enregistrera les données des solutions (réel double précision).
 - N : type de condition aux bords. N pour Neumann, D pour Dirichlet. Par défaut le code utilise des conditions de Neumann (chaîne de caractère de longueur 1).
-- SH : Schema utilisé. Sont disponibles et opérationnels: LF pour le schéma de Lax-Friedrichs, RS pour le schéma de Rusanov (chaîne de caractère de longueur 2).
+- SH : Schema utilisé. Sont disponibles et opérationnels: LF pour le schéma de Lax-Friedrichs, RS pour le schéma de Rusanov, HL pour le schéma HLL (chaîne de caractère de longueur 2).
 - hL hR : choix de la condition initiale sur h pour le problème de Riemann: h_0 = hL si x<0 ; hR sinon (réels double précision).
 - uL uR : choix de la condition initiale sur u pour le problème de Riemann (réels double précision).
 Les résultats sont enregistés dans les fichiers solution_h.dat et solution_u.dat. On peut les visualiser avec Gnuplot par exemple (un exemple de script est disponible).
@@ -30,7 +30,7 @@ Several options are available for this code. They have to be defined in the file
 - CFL : CFL condition for the time mesh. Depends on the scheme that is used, but generally it's CFL = 0.5 (double precision real).
 - T_fin : final time for which we save the solution data (double precision real).
 - N : type of boundary condition. N for Neumann, D for Dirichlet. By default the code uses Neumann conditions (character string of length 1).
-- SH: used scheme. Are available and operating: LF for Lax-Friedrichs scheme, RS for Rusanov scheme (character string of length 2).
+- SH: used scheme. Are available and operating: LF for Lax-Friedrichs scheme, RS for Rusanov scheme, HL for HLL scheme (character string of length 2).
 - hL hR : choice of the initial condition on h for the Riemann problem: h_0 = hL if x<0 ; hR else (double precision reals).
 - uL uR : choice of the initial condition on u for the Riemann problem (double precision reals).
 Results are save in the files solution_h.dat and solution_u.dat. You can visualize them with Gnuplot for instance (a script is available).
