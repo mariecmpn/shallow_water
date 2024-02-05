@@ -4,46 +4,6 @@ module initialisation_sauvegarde
 
     contains 
 
-    ! Fonctions conditions initiales dans le cas d'un choc/contact (u_R < u_L)
-
-    real(rp) function choc_u0(x)
-        real(rp) :: x
-        if (x<0.) then
-            choc_u0 = 3._rp
-        else 
-            choc_u0 = 1._rp
-        end if
-    end function choc_u0
-
-    real(rp) function choc_h0(x)
-        real(rp) :: x
-        if (x<0.) then
-            choc_h0 = 1._rp
-        else 
-            choc_h0 = 2._rp
-        end if
-    end function choc_h0
-
-    ! Fonctions conditions initiales dans le cas d'une detente/contact (u_R > u_L)
-
-    real(rp) function det_u0(x)
-        real(rp) :: x
-        if (x<0.) then
-            det_u0 = 1._rp
-        else 
-            det_u0 = 3._rp
-        end if
-    end function det_u0
-
-    real(rp) function det_h0(x)
-        real(rp) :: x
-        if (x<0.) then
-            det_h0 = 2._rp
-        else 
-            det_h0 = 1._rp
-        end if
-    end function det_h0
-
     ! Fonction condition initiale qui prend en compte la fonction demandee
 
     real(rp) function initial_u(x, uL, uR)
@@ -54,12 +14,6 @@ module initialisation_sauvegarde
         else
             initial_u = uR
         end if
-        !integer :: fonc
-        !if (fonc == 1) then
-        !    initial_u = choc_u0(x)
-        !else 
-        !    initial_u = det_u0(x)
-        !end if
     end function initial_u
 
 
@@ -71,12 +25,6 @@ module initialisation_sauvegarde
         else
             initial_h = hR
         end if
-        !integer :: fonc
-        !if (fonc == 1) then
-        !    initial_h = choc_h0(x)
-        !else 
-        !    initial_h = det_h0(x)
-        !end if
     end function initial_h
 
     ! Lecture des donnees, initialisation et sauvegarde
@@ -90,8 +38,7 @@ module initialisation_sauvegarde
         real(rp), intent(inout) :: CFL ! condition CFL
         real(rp), intent(inout) :: T_fin ! temps final
         character(len = 1), intent(inout) :: condition ! condition aux bords
-        !integer, intent(inout) :: fonc ! fonction initiale utilisee
-        real(rp), intent(inout) :: uL, uR, hL, hR
+        real(rp), intent(inout) :: uL, uR, hL, hR ! conditions initiales
         character(len = 2), intent(inout) :: schema ! schema utilise
 
         integer :: my_unit
@@ -104,7 +51,6 @@ module initialisation_sauvegarde
         read(my_unit, *) T_fin
         read(my_unit, *) condition
         read(my_unit, *) schema
-        !read(my_unit, *) fonc
         read(my_unit, *) hL, hR
         read(my_unit, *) uL, uR
 

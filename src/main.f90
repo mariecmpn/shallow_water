@@ -16,7 +16,6 @@ program systeme_trafic
     real(rp), dimension(:), allocatable :: Err_u, Err_rho
     character(len = 1) :: condition
     character(len = 2) :: schema
-    !integer :: fonc
     integer :: Nb_iter = 0
 
     write(6,*) '------------------------------------------'
@@ -42,7 +41,7 @@ program systeme_trafic
     ! boucle en temps
     date = 0._rp
     do while (date < T_fin)
-        ! CFL (raccourci u_i^n + rho_i^n*p'(rho_i^n) pour max des valeurs propres)
+        ! CFL
         v = abs(lambda_1(W_O(:,1)))
         v = max(v,abs(lambda_2(W_O(:,1))))
         do i = 2,Ns
@@ -52,9 +51,9 @@ program systeme_trafic
         dt = min(dt, T_fin - date)
         date = date + dt
 
-
         ! on etait en variables primitives donc on passe en variables conservatives
         call prim_to_conserv(W_O, Ns)
+        
         ! calcul des flux
         if (schema == 'LF') then
             call flux_LF_syst(Ns, Flux, W_O, dt, dx)
