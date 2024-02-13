@@ -1,4 +1,4 @@
-program systeme_trafic
+program systeme_SW
     use numerics
     use initialisation_sauvegarde
     use schemasSW
@@ -12,11 +12,12 @@ program systeme_trafic
     real(rp), dimension(:,:), allocatable :: W_O
     real(rp), dimension(:,:), allocatable :: W_N
     real(rp), dimension(:,:), allocatable :: Flux
-    real(rp), dimension(:,:), allocatable :: W_ex
-    real(rp), dimension(:), allocatable :: Err_u, Err_rho
+    real(rp), dimension(:), allocatable :: Zi
+    real(rp), dimension(:), allocatable :: Err_u, Err_h
     character(len = 1) :: condition
     character(len = 2) :: schema
     integer :: Nb_iter = 0
+    integer :: topo
 
     write(6,*) '------------------------------------------'
     write(6,*) '----------- Resolution syteme ------------'
@@ -26,23 +27,26 @@ program systeme_trafic
     write(6,*)
 
     ! lecture des donnees du fichier donnees.dat
-    call lecture_donnees_syst('init.dat', x_deb, x_fin, Ns, CFL, T_fin, condition, schema, uL, uR, hL, hR)
+    call lecture_donnees_syst('init.dat', x_deb, x_fin, Ns, CFL, T_fin, condition, schema, uL, uR, hL, hR, topo)
 
     write(6,*)
 
     dx = (x_fin - x_deb)/Ns
 
     ! allocation memoire des tableaux
-    allocate(W_O(2,1:Ns), W_N(2,1:Ns), Flux(2,1:(Ns-1)), W_ex(2,1:Ns), Err_u(Ns), Err_rho(Ns))
+    allocate(W_O(2,1:Ns), W_N(2,1:Ns), Flux(2,1:(Ns-1)), Err_u(Ns), Err_h(Ns), Zi(Ns))
+
+    ! calcul topographie
+    call topographie(Zi, Ns, dx, x_deb, topo)
 
     ! initialisation pour t = 0
-    call initialisation_syst(W_O, Ns, x_deb, x_fin, uL, uR, hL, hR) ! en variables primitives
+    call initialisation_syst(W_O, Ns, x_deb, x_fin, uL, uR, hL, hR, Zi) ! en variables primitives
 
     ! boucle en temps
     date = 0._rp
     do while (date < T_fin)
-        ! CFL
-        v = abs(lambda_1(W_O(:,1)))
+        ! CFL 
+        v = abs(lambda_1(W_O(:,1))) ! on fait le max des valeurs propres
         v = max(v,abs(lambda_2(W_O(:,1))))
         do i = 2,Ns
             v = max(v, abs(lambda_1(W_O(:,i))), abs(lambda_2(W_O(:,i))))
@@ -73,7 +77,7 @@ program systeme_trafic
         Delta = dt/dx
         do i = 2,(Ns-1)
             W_N(1,i) = W_O(1,i) - Delta*(Flux(1,i) - Flux(1,i-1))
-            W_N(2,i) = W_O(2,i) - Delta*(Flux(2,i) - Flux(2,i-1))
+            W_N(2,i) = W_O(2,i) - Delta*(Flux(2,i) - Flux(2,i-1)) + dt*terme_src(W_O(1,i),dx,Zi(i-1), Zi(i+1))
         end do
 
         ! Conditions aux limites
@@ -105,22 +109,20 @@ program systeme_trafic
     end do
 
     write(6,*) 'Nombre d iterations', Nb_iter
-    !write(6,*)
-    !write(6,*) 'Erreurs L2 entre solution approchee et solution exacte: ' 
-    !write(6,*) 'Pour rho: ', norme_L2(Err_rho, Ns)
-    !write(6,*) 'Pour u: ', norme_L2(Err_u, Ns)
-    !write(6,*) 'Erreurs L2 des solutions approchees: ' 
-    !write(6,*) 'Pour rho: ', norme_L2(W_O(1,:), Ns)
-    !write(6,*) 'Pour u: ', norme_L2(W_O(2,:), Ns)
+    write(6,*)
+    write(6,*) 'Norme L^2 de u_i^n: ', norme_L2(W_O(1,:),Ns)
+    do i = 1,Ns
+        Err_h(i) = W_O(1,i) + Zi(i) - hR
+    end do
+    write(6,*) 'Norme L^2 de h_i^n+z_i-H: ', norme_L2(Err_h,Ns)
     write(6,*)
     
     ! on sauvegarde les resultats pour t = T_fin
     write(6,*) 'Enregistrement dans les fichiers solution_h.dat et solution_u.dat'
-    call sauvegarde_syst('solution_h.dat','solution_u.dat', W_O, Ns, x_deb, x_fin)
+    if (topo == 1) write(6,*) 'Enregistrement de la topographie dans le fichier topo.dat'
+    call sauvegarde_syst('solution_h.dat','solution_u.dat', W_O, Ns, x_deb, x_fin, Zi, topo)
 
-    ! on sauvegarde la fonction exacte pour t = T_fin
-    !call sauvegarde_syst('solution_rho_ex.dat', 'solution_u_ex.dat', W_ex, Ns, x_deb, x_fin)
 
-    deallocate(W_O, W_N, Flux, Err_u, Err_rho, W_ex)
+    deallocate(W_O, W_N, Flux, Err_u, Err_h)
 
-end program systeme_trafic
+end program systeme_SW

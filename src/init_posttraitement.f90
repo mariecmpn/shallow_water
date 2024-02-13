@@ -29,7 +29,7 @@ module initialisation_sauvegarde
 
     ! Lecture des donnees, initialisation et sauvegarde
 
-    subroutine lecture_donnees_syst(file_name, x_deb, x_fin, Ns, CFL, T_fin, condition, schema, uL, uR, hL, hR)
+    subroutine lecture_donnees_syst(file_name,x_deb,x_fin,Ns,CFL,T_fin,condition,schema,uL,uR,hL,hR,topo)
         ! Subroutine pour recuperer les donnees du fichier file_name
         IMPLICIT NONE
         character(len = *), intent(in) :: file_name ! nom du fichier a ouvrir
@@ -40,6 +40,7 @@ module initialisation_sauvegarde
         character(len = 1), intent(inout) :: condition ! condition aux bords
         real(rp), intent(inout) :: uL, uR, hL, hR ! conditions initiales
         character(len = 2), intent(inout) :: schema ! schema utilise
+        integer, intent(inout) :: topo ! si on veut une topographie ou non, et laquelle si oui
 
         integer :: my_unit
 
@@ -53,6 +54,7 @@ module initialisation_sauvegarde
         read(my_unit, *) schema
         read(my_unit, *) hL, hR
         read(my_unit, *) uL, uR
+        read(my_unit, *) topo
 
         write(6,*) 'Calcul entre x_deb = ', x_deb, ' et x_fin = ', x_fin
         write(6,*) 'Nombre de points de maillage: ', Ns
@@ -72,17 +74,25 @@ module initialisation_sauvegarde
         !    schema = 0
         end if
 
+        write(6,*)
+        if (topo == 0) then
+            write(6,*) 'Pas de topographie'
+        else if (topo == 1) then
+            write(6,*) 'Topographie choisie: Z(x) = (0.2-0.05(x-10)^2)_+'
+        end if
+
         close(my_unit)
     end subroutine lecture_donnees_syst
 
 
-    subroutine initialisation_syst(W_O, Ns, x_deb, x_fin, uL, uR, hL, hR)
+    subroutine initialisation_syst(W_O, Ns, x_deb, x_fin, uL, uR, hL, hR, Zi)
         ! suboutine pour initialiser le probleme
         IMPLICIT NONE
         integer, intent(in) :: Ns ! nmbre de cellules, fonction utilisee
         real(rp), dimension(2,1:Ns), intent(inout) :: W_O ! tableau qu'on initialise
         real(rp), intent(in) :: x_deb, x_fin ! debut et fin des x
         real(rp), intent(in) :: uL, uR, hL, hR
+        real(rp), dimension(Ns), intent(in) :: Zi
         real(rp) :: x
         integer :: i
         real(rp) :: deltax
@@ -90,35 +100,59 @@ module initialisation_sauvegarde
         deltax = (x_fin-x_deb)/Ns
         do i = 1,Ns
             x = x_deb + i*deltax
-            W_O(1,i) = initial_h(x, hL, hR)
+            W_O(1,i) = initial_h(x, hL, hR) - Zi(i)
             W_O(2,i) = initial_u(x, uL, uR)
         end do
     end subroutine initialisation_syst
 
 
-    subroutine sauvegarde_syst(file_name_rho, file_name_u, W_O, Ns, x_deb, x_fin)
+    subroutine sauvegarde_syst(file_name_h, file_name_u, W_O, Ns, x_deb, x_fin, Zi, topo)
         ! subroutine pour sauvegarde les solutions du probleme
         IMPLICIT NONE
-        character(len = *), intent(in) :: file_name_u, file_name_rho ! noms des fichiers de sortie
+        character(len = *), intent(in) :: file_name_u, file_name_h ! noms des fichiers de sortie
         integer, intent(in) :: Ns ! nombre de cellules
         real(rp), dimension(2,1:Ns), intent(in) :: W_O ! tableau a enregistrer
+        real(rp), dimension(Ns), intent(in) :: Zi ! topographie a enregistrer si non nulle
         real(rp), intent(in) :: x_deb, x_fin ! debut et fin des x
+        integer, intent(in) :: topo
         real(rp) :: x ! pour calculer x_i
         integer :: i ! pour boucle do
-        integer :: my_unit_1 = 60, my_unit_2 = 70
+        integer :: my_unit_1 = 60, my_unit_2 = 70, my_unit_3 = 80
 
-        open(my_unit_1, file = file_name_rho, action = 'write', form = 'formatted', status = 'unknown')
+        open(my_unit_1, file = file_name_h, action = 'write', form = 'formatted', status = 'unknown')
         open(my_unit_2, file = file_name_u, action = 'write', form = 'formatted', status = 'unknown')
+        if (topo == 1) open(my_unit_3, file = 'topo.dat', action = 'write', form = 'formatted', status = 'unknown')
 
         do i = 1,Ns
             x = x_deb + i*(x_fin-x_deb)/Ns
-            write(my_unit_1, *) x, W_O(1,i)
+            write(my_unit_1, *) x, W_O(1,i)+Zi(i)
             write(my_unit_2, *) x, W_O(2,i)
+            if (topo == 1) write(my_unit_3, *) x, Zi(i)
         end do
 
         close(my_unit_1)
         close(my_unit_2)
+        close(my_unit_3)
     end subroutine sauvegarde_syst
+
+    subroutine sauvegarde_topo(file_name, Zi, Ns, x_deb, x_fin)
+        character(len = *), intent(in) :: file_name
+        integer, intent(in) :: Ns ! nombre de cellules
+        real(rp), dimension(Ns), intent(in) :: Zi ! topographie a enregistrer
+        real(rp), intent(in) :: x_deb, x_fin ! debut et fin des x
+        real(rp) :: x ! pour calculer x_i
+        integer :: i ! pour boucle do
+        integer :: my_unit
+
+        open(newunit = my_unit, file = file_name, action = 'write', form = 'formatted', status = 'unknown')
+
+        do i = 1,Ns
+            x = x_deb + i*(x_fin-x_deb)/Ns
+            write(my_unit, *) x, Zi(i)
+        end do
+
+        close(my_unit)
+    end subroutine sauvegarde_topo
 
     ! Pour passer des variables conservatives aux variables primitives et inversement
 
@@ -214,6 +248,39 @@ module initialisation_sauvegarde
         end do
         norme_L2 = sqrt(norme_L2)
     end function norme_L2
+
+    real(rp) function Z(x) ! fonction pour la topographie
+        real(rp) :: x, y
+        y = 0.2_rp - 0.05_rp*(x-10.0_rp)**2
+        if (y > 0.) then 
+            Z = y
+        else
+            Z = 0._rp
+        end if
+    end function Z
+
+    real(rp) function terme_src(h, dx, zi, zj)
+        real(rp) :: h, dx
+        real(rp) :: zi,zj
+
+        terme_src = -g*h*(zj-zi)/(2._rp*dx)
+    end function terme_src
+
+    subroutine topographie(Zi, Ns, dx, x_deb, topo)
+        real(rp), dimension(Ns), intent(out) :: Zi
+        integer, intent(in) :: Ns, topo
+        real(rp), intent(in) :: dx
+        real(rp), intent(in) :: x_deb
+        integer :: i
+
+        Zi(:) = 0._rp
+        if (topo == 1) then
+            do i = 1,Ns
+                Zi(i) = Z(x_deb+i*dx)
+            end do
+        end if
+
+    end subroutine topographie
 
 
 end module initialisation_sauvegarde
