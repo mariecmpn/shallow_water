@@ -1,9 +1,10 @@
 0.0 25.0 :: x_debut et x_fin
-1000 :: Nombre de points de maillage en x
+Y :: Convergence : Y pour oui, N pour non (pour faire une boucle sur les Ns et enregistrer les erreurs pour les graphes de convergence). Default: N.
+100 1000 10 :: Nbre points de maillage en x. Si convergence = N, on prend en compte seulement le premier nombre = Ns. Si convergence = Y: Ns_deb Ns_fin Nb_de_Ns_differents
 0.5 :: Condition CFL
-0.5 :: Temps final
+8.E-2 :: Temps final
 N :: condition aux bords: N pour Neumann, D pour Dirichlet. Default: Dirichlet
-HL :: Schema utilise: LF pour Lax-Friedrichs, RS pour Rusanov, HL pour HLL
+HL :: Schema utilise: LF pour Lax-Friedrichs, RS pour Rusanov, HL pour HLL, HY pour reconstruction hydrostatique
 2.0 2.0 :: condition initiale h_0
 0.0 0.0 :: condition initiale u_0
-1 :: topographie utilisee - 0: pas de topographie; 1: Z(x) = (0.2-0.05(x-10)^2)_+ 
+2 :: topographie utilisee - 0: pas de topographie; 1: Z(x) = (0.2-0.05(x-10)^2)_+ ; 2: Z(x) = (1.8-0.5(x-10)^2)_+
