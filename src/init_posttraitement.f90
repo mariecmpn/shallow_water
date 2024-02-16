@@ -139,18 +139,18 @@ module initialisation_sauvegarde
         close(my_unit_3)
     end subroutine sauvegarde_syst
 
-    subroutine sauvegarde_conv(file_name, nb, Err, N)
+    subroutine sauvegarde_conv(file_name, nb, Err)
         character(len = *), intent(in) :: file_name
         integer, intent(in) :: nb ! nombre de cellules
-        integer, dimension(nb), intent(in) :: N
-        real(rp), dimension(2,nb), intent(in) :: Err
+        !integer, dimension(nb), intent(in) :: N
+        real(rp), dimension(3,nb), intent(in) :: Err
         integer :: i ! pour boucle do
         integer :: my_unit
 
         open(newunit = my_unit, file = file_name, action = 'write', form = 'formatted', status = 'unknown')
 
         do i = 1,nb
-            write(my_unit, *) N(i), Err(1,i), Err(2,i)
+            write(my_unit, *) Err(3,i), Err(1,i), Err(2,i)
         end do
 
         close(my_unit)

@@ -3,24 +3,26 @@ program systeme_SW
     use initialisation_sauvegarde
     use schemasSW
     IMPLICIT NONE
-    real(rp) :: x_deb, x_fin
-    integer :: Ns, Ns1, nb, dn
-    real(rp) :: CFL, T_fin, date, dt, dx
-    real(rp) :: v, Delta, x
-    integer :: i,j
-    real(rp) :: uL, uR, hL, hR
-    real(rp), dimension(:,:), allocatable :: W_O
-    real(rp), dimension(:,:), allocatable :: W_Op, W_Om
-    real(rp), dimension(:,:), allocatable :: W_N
-    real(rp), dimension(:,:), allocatable :: Flux
-    real(rp), dimension(:), allocatable :: Zi
-    real(rp), dimension(:), allocatable :: Err_u, Err_h
-    real(rp), dimension(:,:), allocatable :: Err
-    integer, dimension(:), allocatable :: N
-    character(len = 1) :: condition, conv
-    character(len = 2) :: schema
-    integer :: Nb_iter = 0
-    integer :: topo
+
+    ! Definition des variables
+    real(rp) :: x_deb, x_fin ! dimensions du domaine en x: [x_deb,x_fin]
+    integer :: Ns, Ns1, nb, dn ! nombre de cellules, nombre max de cellules si courbe de convergence, nb de nombres de cellules a tester si courbe conv, delta_n entre chaque nombre de cellules a tester different
+    real(rp) :: CFL, T_fin, date, dt, dx ! condition CFL, Temps final, date pour laquelle on calcule l'iteration, delta_t, delta_x
+    real(rp) :: v, Delta ! vitesse pour calculer dt avec la CFL, Delta = dt/dx pour ne pas avoir a le calculer tout le temps
+    integer :: i,j ! entiers pour les boucles do
+    real(rp) :: uL, uR, hL, hR ! conditions initiales
+    real(rp), dimension(:,:), allocatable :: W_O ! tableau W^n des solutions
+    real(rp), dimension(:,:), allocatable :: W_Op, W_Om ! tableaux pour la reconstruction hydrostatique
+    real(rp), dimension(:,:), allocatable :: W_N ! tableau W^{n+1} des solutions
+    real(rp), dimension(:,:), allocatable :: Flux ! tableau des flux numeriques
+    real(rp), dimension(:), allocatable :: Zi ! tableau pour la topographie
+    real(rp), dimension(:), allocatable :: Err_u, Err_h ! tableaux pour les erreurs (si pas de graphe de convergence)
+    real(rp), dimension(:,:), allocatable :: Err ! tableaux pour les erreurs (si graphe de convergence)
+    integer, dimension(:), allocatable :: N ! tableaux pour les Ns si graphe de convergence
+    character(len = 1) :: condition, conv ! condition aux bords, convergence ou non
+    character(len = 2) :: schema ! schema utilise
+    integer :: Nb_iter = 0 ! nombre d'iterations en temps
+    integer :: topo ! quelle topographie on utilise
 
     write(6,*) '------------------------------------------'
     write(6,*) '----------- Resolution syteme ------------'
@@ -42,7 +44,7 @@ program systeme_SW
         write(6,*) 'Ns_fin = ', Ns1
         write(6,*)
 
-        allocate(N(nb),Err(2,nb))
+        allocate(N(nb),Err(3,nb))
         dn = (Ns1 - Ns)/(nb-1)
         do i = 1,nb
             N(i) = Ns + (i-1)*dn
@@ -95,7 +97,7 @@ program systeme_SW
                 if (schema == 'HY') then
                     do i = 2,(N(j)-1)
                         W_N(1,i) = W_O(1,i) - Delta*(Flux(1,i) - Flux(1,i-1))
-                        W_N(2,i) = W_O(2,i) - Delta*(Flux(2,i) - Flux(2,i-1)) + dt*terme_src_hy(dx,W_Om(1,i),W_Op(1,i-1))
+                        W_N(2,i) = W_O(2,i) - Delta*(Flux(2,i) - Flux(2,i-1)) + dt*terme_src_hy(dx,W_Op(1,i-1),W_Om(1,i))
                     end do
                 else
                     do i = 2,(N(j)-1)
@@ -139,13 +141,14 @@ program systeme_SW
             end do
             Err(1,j) = norme_L2(Err_h,N(j))
             write(6,*)
+            Err(3,j) = dx
 
             deallocate(W_O, W_N, Flux, Err_u, Err_h, Zi, W_Om, W_Op)
         end do
 
         ! Enregistrement des erreurs
         write(6,*) 'Enregistrement dans le fichier erreurs.dat'
-        call sauvegarde_conv('erreurs.dat', nb, Err, N)
+        call sauvegarde_conv('erreurs.dat', nb, Err)
 
         deallocate(Err, N)
 
@@ -197,7 +200,7 @@ program systeme_SW
             if (schema == 'HY') then
                 do i = 2,(Ns-1)
                     W_N(1,i) = W_O(1,i) - Delta*(Flux(1,i) - Flux(1,i-1))
-                    W_N(2,i) = W_O(2,i) - Delta*(Flux(2,i) - Flux(2,i-1)) + dt*terme_src_hy(dx,W_Om(1,i),W_Op(1,i-1))
+                    W_N(2,i) = W_O(2,i) - Delta*(Flux(2,i) - Flux(2,i-1)) + dt*terme_src_hy(dx,W_Op(1,i-1),W_Om(1,i))
                 end do
             else
                 do i = 2,(Ns-1)
