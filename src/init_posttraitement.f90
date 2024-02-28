@@ -6,10 +6,12 @@ module initialisation_sauvegarde
 
     ! Fonction condition initiale qui prend en compte la fonction demandee
 
-    real(rp) function initial_u(x, uL, uR)
+    real(rp) function initial_u(x, uL, uR, x_deb, x_fin)
         ! fonction condition initiale pour u
-        real(rp) :: x, uL, uR
-        if (x < 0.) then
+        real(rp) :: x, uL, uR, x_deb, x_fin
+        real(rp) :: mid
+        mid = (x_deb+x_fin)/2.
+        if (x < mid) then
             initial_u = uL
         else
             initial_u = uR
@@ -17,10 +19,12 @@ module initialisation_sauvegarde
     end function initial_u
 
 
-    real(rp) function initial_h(x, hL, hR)
+    real(rp) function initial_h(x, hL, hR, x_deb, x_fin)
         ! fonction condition initiale pour rho
-        real(rp) :: x, hL, hR
-        if (x < 0.) then
+        real(rp) :: x, hL, hR, x_deb, x_fin
+        real(rp) :: mid
+        mid = (x_deb+x_fin)/2.
+        if (x < mid) then
             initial_h = hL
         else
             initial_h = hR
@@ -29,7 +33,8 @@ module initialisation_sauvegarde
 
     ! Lecture des donnees, initialisation et sauvegarde
 
-    subroutine lecture_donnees_syst(file_name,x_deb,x_fin,Ns,CFL,T_fin,condition,schema,uL,uR,hL,hR,topo,conv,Ns1,nb)
+    subroutine lecture_donnees_syst(file_name,x_deb,x_fin,Ns,CFL,T_fin,cond, &
+                                    schema,uL,uR,hL,hR,topo,conv,Ns1,nb)
         ! Subroutine pour recuperer les donnees du fichier file_name
         IMPLICIT NONE
         character(len = *), intent(in) :: file_name ! nom du fichier a ouvrir
@@ -37,13 +42,13 @@ module initialisation_sauvegarde
         real(rp), intent(inout) :: x_deb, x_fin ! debut et fin des x
         real(rp), intent(inout) :: CFL ! condition CFL
         real(rp), intent(inout) :: T_fin ! temps final
-        character(len = 1), intent(inout) :: condition ! condition aux bords
+        !character(len = 1), intent(inout) :: condition ! condition aux bords
+        real(rp), dimension(2,2), intent(inout) :: cond
         real(rp), intent(inout) :: uL, uR, hL, hR ! conditions initiales
         character(len = 2), intent(inout) :: schema ! schema utilise
         character(len = 1), intent(inout) :: conv ! si on veut faire ou non des graphiques de convergence
         integer, intent(inout) :: Ns1, nb ! si 
         integer, intent(inout) :: topo ! si on veut une topographie ou non, et laquelle si oui
-
         integer :: my_unit
 
         open(newunit = my_unit, file = file_name, action = 'read', form = 'formatted', status = 'old')
@@ -57,7 +62,9 @@ module initialisation_sauvegarde
         end if
         read(my_unit, *) CFL
         read(my_unit, *) T_fin
-        read(my_unit, *) condition
+        !read(my_unit, *) condition
+        read(my_unit, *) cond(1,1), cond(2,1)
+        read(my_unit, *) cond(1,2), cond(2,2)
         read(my_unit, *) schema
         read(my_unit, *) hL, hR
         read(my_unit, *) uL, uR
@@ -66,6 +73,40 @@ module initialisation_sauvegarde
         write(6,*) 'Calcul entre x_deb = ', x_deb, ' et x_fin = ', x_fin
         write(6,*) 'Temps final: ', T_fin
 
+        write(6,*)
+        write(6,*) 'Conditions aux limites:'
+        write(6,*) 'En amont:'
+        if (cond(1,1) == -1.0_rp) then
+            write(6,*) '-h: Neumann'
+        else if (cond(1,1) == 0.0_rp) then
+            write(6,*) '-h: Dirichlet'
+        else
+            write(6,*) '-h: ', cond(1,1)
+        end if
+        if (cond(2,1) == -1.0_rp) then
+            write(6,*) '-u: Neumann'
+        else if (cond(2,1) == 0.0_rp) then
+            write(6,*) '-u: Dirichlet'
+        else
+            write(6,*) '-u: ', cond(2,1)
+        end if
+        write(6,*) 'En aval:'
+        if (cond(1,2) == -1.0_rp) then
+            write(6,*) '-h: Neumann'
+        else if (cond(1,2) == 0.0_rp) then
+            write(6,*) '-h: Dirichlet'
+        else
+            write(6,*) '-h: ', cond(1,2)
+        end if
+        if (cond(2,2) == -1.0_rp) then
+            write(6,*) '-u: Neumann'
+        else if (cond(2,2) == 0.0_rp) then
+            write(6,*) '-u: Dirichlet'
+        else
+            write(6,*) '-u: ', cond(2,2)
+        end if
+
+        write(6,*)
         if (schema == 'LF') then ! Lax-Friedrichs
             write(6,*) "Schema utilise: Lax_Friedrichs"
         else if (schema == 'RS') then ! Rusanov
@@ -104,13 +145,13 @@ module initialisation_sauvegarde
         deltax = (x_fin-x_deb)/Ns
         do i = 1,Ns
             x = x_deb + i*deltax
-            W_O(1,i) = initial_h(x, hL, hR) - Zi(i)
-            W_O(2,i) = initial_u(x, uL, uR)
+            W_O(1,i) = initial_h(x, hL, hR, x_deb, x_fin) - Zi(i)
+            W_O(2,i) = initial_u(x, uL, uR, x_deb, x_fin)
         end do
     end subroutine initialisation_syst
 
 
-    subroutine sauvegarde_syst(file_name_h, file_name_u, W_O, Ns, x_deb, x_fin, Zi, topo)
+    subroutine sauvegarde_syst(file_name_h, file_name_u, W_O, Ns, x_deb, x_fin, Zi)
         ! subroutine pour sauvegarde les solutions du probleme
         IMPLICIT NONE
         character(len = *), intent(in) :: file_name_u, file_name_h ! noms des fichiers de sortie
@@ -118,20 +159,19 @@ module initialisation_sauvegarde
         real(rp), dimension(2,1:Ns), intent(in) :: W_O ! tableau a enregistrer
         real(rp), dimension(Ns), intent(in) :: Zi ! topographie a enregistrer si non nulle
         real(rp), intent(in) :: x_deb, x_fin ! debut et fin des x
-        integer, intent(in) :: topo
         real(rp) :: x ! pour calculer x_i
         integer :: i ! pour boucle do
         integer :: my_unit_1 = 60, my_unit_2 = 70, my_unit_3 = 80
 
         open(my_unit_1, file = file_name_h, action = 'write', form = 'formatted', status = 'unknown')
         open(my_unit_2, file = file_name_u, action = 'write', form = 'formatted', status = 'unknown')
-        if (topo == 1 .OR. topo == 2) open(my_unit_3, file = 'topo.dat', action = 'write', form = 'formatted', status = 'unknown')
+        open(my_unit_3, file = 'topo.dat', action = 'write', form = 'formatted', status = 'unknown')
 
         do i = 1,Ns
             x = x_deb + i*(x_fin-x_deb)/Ns
             write(my_unit_1, *) x, W_O(1,i)+Zi(i)
             write(my_unit_2, *) x, W_O(2,i)
-            if (topo == 1 .OR. topo == 2) write(my_unit_3, *) x, Zi(i)
+            write(my_unit_3, *) x, Zi(i)
         end do
 
         close(my_unit_1)

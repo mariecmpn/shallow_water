@@ -1,7 +1,6 @@
 # Compilateur utilise
 FC = gfortran-11
 
-
 # Options de compilation
 FFLAGS = -O0
 

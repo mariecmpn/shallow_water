@@ -19,7 +19,8 @@ program systeme_SW
     real(rp), dimension(:), allocatable :: Err_u, Err_h ! tableaux pour les erreurs (si pas de graphe de convergence)
     real(rp), dimension(:,:), allocatable :: Err ! tableaux pour les erreurs (si graphe de convergence)
     integer, dimension(:), allocatable :: N ! tableaux pour les Ns si graphe de convergence
-    character(len = 1) :: condition, conv ! condition aux bords, convergence ou non
+    character(len = 1) :: conv ! convergence ou non
+    real(rp), dimension(2,2) :: cond
     character(len = 2) :: schema ! schema utilise
     integer :: Nb_iter = 0 ! nombre d'iterations en temps
     integer :: topo ! quelle topographie on utilise
@@ -32,7 +33,8 @@ program systeme_SW
     write(6,*)
 
     ! lecture des donnees du fichier donnees.dat
-    call lecture_donnees_syst('init.dat',x_deb,x_fin,Ns,CFL,T_fin,condition,schema,uL,uR,hL,hR,topo,conv,Ns1,nb)
+    call lecture_donnees_syst('init.dat',x_deb,x_fin,Ns,CFL,T_fin,cond,&
+                                schema,uL,uR,hL,hR,topo,conv,Ns1,nb)
 
     write(6,*)
 
@@ -107,22 +109,45 @@ program systeme_SW
                 end if
 
                 ! Conditions aux limites
-                if (condition == 'D') then 
-                    ! Dirichlet
-                    W_N(1,1) = W_O(1,1)
-                    W_N(1,N(j)) = W_O(1,N(j))
-                    W_N(2,1) = W_O(2,1)
-                    W_N(2,N(j)) = W_O(2,N(j))
-                else if (condition == 'P') then
-                    ! condition periodique
-                    W_N(:,1) = W_O(:,1) - (dt/dx)* (Flux(:,1) - Flux(:,(N(j)-1)))
-                    W_N(:,N(j)) = W_N(:,1)
-                else ! par defaut on prend des conditions de Neumann
-                    W_N(1,1) = W_N(1,2)
-                    W_N(1,N(j)) = W_N(1,N(j)-1)
-                    W_N(2,1) = W_N(2,2)
-                    W_N(2,N(j)) = W_N(2,N(j)-1)
-                end if
+                !if (condition == 'D') then 
+                !    ! Dirichlet
+                !    W_N(1,1) = W_O(1,1)
+                !    W_N(1,N(j)) = W_O(1,N(j))
+                !    W_N(2,1) = W_O(2,1)
+                !    W_N(2,N(j)) = W_O(2,N(j))
+                !else if (condition == 'P') then
+                !    ! condition periodique
+                !    W_N(:,1) = W_O(:,1) - (dt/dx)* (Flux(:,1) - Flux(:,(N(j)-1)))
+                !   W_N(:,N(j)) = W_N(:,1)
+                !else ! par defaut on prend des conditions de Neumann
+                !    W_N(1,1) = W_N(1,2)
+                !    W_N(1,N(j)) = W_N(1,N(j)-1)
+                !    W_N(2,1) = W_N(2,2)
+                !    W_N(2,N(j)) = W_N(2,N(j)-1)
+                !end if
+
+                ! conditions aux bords en amont
+                do i = 1,2
+                    !write(6,*) 'amont', i, cond(i,1)
+                    if (cond(i,1) == -1.0_rp) then
+                        W_N(i,1) = W_N(i,2)
+                    else if (cond(i,1) == 0.0_rp) then
+                        W_N(i,1) = W_O(i,1)
+                    else
+                        W_N(i,1) = cond(i,1)
+                    end if
+                end do
+                ! conditions aux bords en aval
+                do i = 1,2
+                    !write(6,*) 'aval', i, cond(i,2)
+                    if (cond(i,2) == -1.0_rp) then
+                        W_N(i,N(j)) = W_N(i,N(j)-1)
+                    else if (cond(i,2) == 0.0_rp) then
+                        W_N(i,N(j)) = W_O(i,N(j))
+                    else
+                        W_N(i,1) = cond(i,2)
+                    end if
+                end do
                 
                 !mise a jour
                 W_O(1:2,1:N(j)) = W_N(1:2,1:N(j))
@@ -210,22 +235,45 @@ program systeme_SW
             end if
 
             ! Conditions aux limites
-            if (condition == 'D') then 
-                ! Dirichlet
-                W_N(1,1) = W_O(1,1)
-                W_N(1,Ns) = W_O(1,Ns)
-                W_N(2,1) = W_O(2,1)
-                W_N(2,Ns) = W_O(2,Ns)
-            else if (condition == 'P') then
-                ! condition periodique
-                W_N(:,1) = W_O(:,1) - (dt/dx)* (Flux(:,1) - Flux(:,(Ns-1)))
-                W_N(:,Ns) = W_N(:,1)
-            else ! par defaut on prend des conditions de Neumann
-                W_N(1,1) = W_N(1,2)
-                W_N(1,Ns) = W_N(1,Ns-1)
-                W_N(2,1) = W_N(2,2)
-                W_N(2,Ns) = W_N(2,Ns-1)
-            end if
+            !if (condition == 'D') then 
+            !    ! Dirichlet
+            !    W_N(1,1) = W_O(1,1)
+            !    W_N(1,Ns) = W_O(1,Ns)
+            !    W_N(2,1) = W_O(2,1)
+            !    W_N(2,Ns) = W_O(2,Ns)
+            !else if (condition == 'P') then
+            !    ! condition periodique
+            !    W_N(:,1) = W_O(:,1) - (dt/dx)* (Flux(:,1) - Flux(:,(Ns-1)))
+            !    W_N(:,Ns) = W_N(:,1)
+            !else ! par defaut on prend des conditions de Neumann
+            !    W_N(1,1) = W_N(1,2)
+            !    W_N(1,Ns) = W_N(1,Ns-1)
+            !    W_N(2,1) = W_N(2,2)
+            !    W_N(2,Ns) = W_N(2,Ns-1)
+            !end if
+
+            ! conditions aux bords en amont
+            do i = 1,2
+                !write(6,*) 'amont', i, cond(i,1)
+                if (cond(i,1) == -1.0_rp) then
+                    W_N(i,1) = W_N(i,2)
+                else if (cond(i,1) == 0.0_rp) then
+                    W_N(i,1) = W_O(i,1)
+                else
+                    W_N(i,1) = cond(i,1)
+                end if
+            end do
+            ! conditions aux bords en aval
+            do i = 1,2
+                !write(6,*) 'aval', i, cond(i,2)
+                if (cond(i,2) == -1.0_rp) then
+                    W_N(i,Ns) = W_N(i,Ns-1)
+                else if (cond(i,2) == 0.0_rp) then
+                    W_N(i,Ns) = W_O(i,Ns)
+                else
+                    W_N(i,Ns) = cond(i,2)
+                end if
+            end do
             
             !mise a jour
             W_O(1:2,1:Ns) = W_N(1:2,1:Ns)
@@ -248,8 +296,8 @@ program systeme_SW
         
         ! on sauvegarde les resultats pour t = T_fin
         write(6,*) 'Enregistrement dans les fichiers solution_h.dat et solution_u.dat'
-        if (topo == 1 .OR. topo == 2) write(6,*) 'Enregistrement de la topographie dans le fichier topo.dat'
-        call sauvegarde_syst('solution_h.dat','solution_u.dat', W_O, Ns, x_deb, x_fin, Zi, topo)
+        write(6,*) 'Enregistrement de la topographie dans le fichier topo.dat'
+        call sauvegarde_syst('solution_h.dat','solution_u.dat', W_O, Ns, x_deb, x_fin, Zi)
 
         deallocate(W_O, W_N, Flux, Err_u, Err_h, Zi, W_Om, W_Op)
     end if 
