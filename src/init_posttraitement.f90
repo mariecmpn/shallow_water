@@ -107,14 +107,18 @@ module initialisation_sauvegarde
         end if
 
         write(6,*)
-        if (schema == 'LF') then ! Lax-Friedrichs
+        if (schema == 'LF') then
             write(6,*) "Schema utilise: Lax_Friedrichs"
-        else if (schema == 'RS') then ! Rusanov
+        else if (schema == 'RS') then
             write(6,*) "Schema utilise: Rusanov"
-        else if (schema == 'HL') then ! HLL
+        else if (schema == 'HL') then 
             write(6,*) "Schema utilise: HLL"
-        else if (schema == 'HY') then ! reconstruction hydrostatique
+        else if (schema == 'HY') then 
             write(6,*) "Schema utilise: Reconstruction hydrostatique (avec schema HLL)"
+        else if (schema == 'GN') then
+            write(6,*) "Schema utilise: type Godunov non well-balanced"
+        else if (schema == 'WB') then
+            write(6,*) "Schema utilise: type Godunov well-balanced"
         end if
 
         write(6,*)
@@ -298,7 +302,6 @@ module initialisation_sauvegarde
         else 
             vitesse = 0._rp
         end if
-
     end function vitesse
 
     real(rp) function Z(x,topo) ! fonction pour la topographie
@@ -311,7 +314,6 @@ module initialisation_sauvegarde
         else 
             Z = 0._rp
         end if
-        
     end function Z
 
     real(rp) function terme_src(h, dx, zi, zj)
@@ -329,6 +331,16 @@ module initialisation_sauvegarde
 
         terme_src_hy = g*(hj**2-hi**2)/(2._rp*dx)
     end function terme_src_hy
+
+    real(rp) function terme_src_nonWB(dx, hi, hj, zi, zj)
+        real(rp) :: dx, hi, hj, zi, zj
+        terme_src_nonWB = -g*((hi+hj)/2.)*((zj-zi)/dx)
+    end function terme_src_nonWB
+
+    real(rp) function terme_src_WB(hl,hr,zr,zl)
+        real(rp) :: hl, hr, zl, zr
+        terme_src_WB = 0.5*(hl+hr)*(zr-zl)
+    end function terme_src_WB
 
     subroutine topographie(Zi, Ns, dx, x_deb, topo)
         ! subroutine pour le calcul du tableau de la topographie

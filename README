@@ -12,4 +12,4 @@ Contenu du dossier:
 - plot.gnu: exemple de script Gnuplot pour la visualisation des résultats
 
 Compilation:
-Aller dans le dossier src puis faire make. Le fichier exécutable sera stocké dans le dossier principal du code. 
+Aller dans le dossier src puis faire make. Le fichier exécutable sera stocké dans le dossier principal du code. Les options du code sont à définir dans le fichier init.dat.

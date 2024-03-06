@@ -20,7 +20,8 @@ program systeme_SW
     real(rp), dimension(:,:), allocatable :: Err ! tableaux pour les erreurs (si graphe de convergence)
     integer, dimension(:), allocatable :: N ! tableaux pour les Ns si graphe de convergence
     character(len = 1) :: conv ! convergence ou non
-    real(rp), dimension(2,2) :: cond
+    real(rp), dimension(2,2) :: cond ! conditions aux bords
+    real(rp) :: lambda
     character(len = 2) :: schema ! schema utilise
     integer :: Nb_iter = 0 ! nombre d'iterations en temps
     integer :: topo ! quelle topographie on utilise
@@ -89,9 +90,13 @@ program systeme_SW
                 else if (schema == 'RS') then
                     call flux_RS_syst(N(j), Flux, W_O)
                 else if (schema == 'HL') then
-                    call flux_HLL_syst(N(j), Flux, W_O, dx, dt)
+                    call flux_HLL_syst(N(j), Flux, W_O, dx, dt, lambda)
                 else if (schema == 'HY') then
                     call flux_recons_hydro(N(j), Flux, W_O, Zi, dx, dt, W_Om, W_Op)
+                else if (schema == 'GN') then
+                    call flux_HLL_syst(N(j), Flux, W_O, dx, dt, lambda)
+                else if (schema == 'WB') then
+                    call flux_HLL_syst(N(j), Flux, W_O, dx, dt, lambda)
                 end if
 
                 ! update calcul de u_i^{n+1}
@@ -99,7 +104,20 @@ program systeme_SW
                 if (schema == 'HY') then
                     do i = 2,(N(j)-1)
                         W_N(1,i) = W_O(1,i) - Delta*(Flux(1,i) - Flux(1,i-1))
-                        W_N(2,i) = W_O(2,i) - Delta*(Flux(2,i) - Flux(2,i-1)) + dt*terme_src_hy(dx,W_Op(1,i-1),W_Om(1,i))
+                        W_N(2,i) = W_O(2,i) - Delta*(Flux(2,i) - Flux(2,i-1)) + &
+                        & dt*terme_src_hy(dx,W_Op(1,i-1),W_Om(1,i))
+                    end do
+                else if (schema == 'GN') then
+                    do i = 2,(N(j)-1)
+                        W_N(1,i) = W_O(1,i) - Delta*(Flux(1,i) - Flux(1,i-1))
+                        W_N(2,i) = W_O(2,i)-Delta*(Flux(2,i)-Flux(2,i-1))+ &
+                        & dt*terme_src_nonWB(dx,W_O(1,i-1),W_O(1,i),Zi(i-1),Zi(i))
+                    end do
+                else if (schema == 'WB') then
+                    do i = 2,N(j)-1
+                        W_N(1,i) = W_O(1,i)-Delta*(Flux(1,i) - Flux(1,i-1))+lambda*0.5*Delta*(Zi(i+1)-2*Zi(i)+Zi(i-1))
+                        W_N(2,i) = W_O(2,i)-Delta*(Flux(1,i) - Flux(1,i-1)) &
+                        & +0.5*dt*g*(terme_src_WB(W_O(1,i-1),W_O(1,i),Zi(i-1),Zi(i)))
                     end do
                 else
                     do i = 2,(N(j)-1)
@@ -108,27 +126,8 @@ program systeme_SW
                     end do
                 end if
 
-                ! Conditions aux limites
-                !if (condition == 'D') then 
-                !    ! Dirichlet
-                !    W_N(1,1) = W_O(1,1)
-                !    W_N(1,N(j)) = W_O(1,N(j))
-                !    W_N(2,1) = W_O(2,1)
-                !    W_N(2,N(j)) = W_O(2,N(j))
-                !else if (condition == 'P') then
-                !    ! condition periodique
-                !    W_N(:,1) = W_O(:,1) - (dt/dx)* (Flux(:,1) - Flux(:,(N(j)-1)))
-                !   W_N(:,N(j)) = W_N(:,1)
-                !else ! par defaut on prend des conditions de Neumann
-                !    W_N(1,1) = W_N(1,2)
-                !    W_N(1,N(j)) = W_N(1,N(j)-1)
-                !    W_N(2,1) = W_N(2,2)
-                !    W_N(2,N(j)) = W_N(2,N(j)-1)
-                !end if
-
                 ! conditions aux bords en amont
                 do i = 1,2
-                    !write(6,*) 'amont', i, cond(i,1)
                     if (cond(i,1) == -1.0_rp) then
                         W_N(i,1) = W_N(i,2)
                     else if (cond(i,1) == 0.0_rp) then
@@ -139,13 +138,12 @@ program systeme_SW
                 end do
                 ! conditions aux bords en aval
                 do i = 1,2
-                    !write(6,*) 'aval', i, cond(i,2)
                     if (cond(i,2) == -1.0_rp) then
                         W_N(i,N(j)) = W_N(i,N(j)-1)
                     else if (cond(i,2) == 0.0_rp) then
                         W_N(i,N(j)) = W_O(i,N(j))
                     else
-                        W_N(i,1) = cond(i,2)
+                        W_N(i,N(j)) = cond(i,2)
                     end if
                 end do
                 
@@ -215,9 +213,13 @@ program systeme_SW
             else if (schema == 'RS') then
                 call flux_RS_syst(Ns, Flux, W_O)
             else if (schema == 'HL') then
-                call flux_HLL_syst(Ns, Flux, W_O, dx, dt)
+                call flux_HLL_syst(Ns, Flux, W_O, dx, dt, lambda)
             else if (schema == 'HY') then
                 call flux_recons_hydro(Ns, Flux, W_O, Zi, dx, dt, W_Om, W_Op)
+            else if (schema == 'GN') then
+                call flux_HLL_syst(Ns, Flux, W_O, dx, dt, lambda)
+            else if (schema == 'WB') then
+                call flux_HLL_syst(Ns, Flux, W_O, dx, dt, lambda)
             end if
 
             ! update calcul de u_i^{n+1}
@@ -225,36 +227,31 @@ program systeme_SW
             if (schema == 'HY') then
                 do i = 2,(Ns-1)
                     W_N(1,i) = W_O(1,i) - Delta*(Flux(1,i) - Flux(1,i-1))
-                    W_N(2,i) = W_O(2,i) - Delta*(Flux(2,i) - Flux(2,i-1)) + dt*terme_src_hy(dx,W_Op(1,i-1),W_Om(1,i))
+                    W_N(2,i) = W_O(2,i) - Delta*(Flux(2,i) - Flux(2,i-1)) +& 
+                    & dt*terme_src_hy(dx,W_Op(1,i-1),W_Om(1,i))
+                end do
+            else if (schema == 'GN') then
+                do i = 2,(Ns-1)
+                    W_N(1,i) = W_O(1,i) - Delta*(Flux(1,i) - Flux(1,i-1))
+                    W_N(2,i) = W_O(2,i)-Delta*(Flux(2,i)-Flux(2,i-1))+&
+                    & dx*0.5/lambda*terme_src_nonWB(dx,W_O(1,i-1),W_O(1,i),Zi(i-1),Zi(i))
+                end do
+            else if (schema == 'WB') then
+                do i = 2,Ns-1
+                    W_N(1,i) = W_O(1,i)-Delta*(Flux(1,i) - Flux(1,i-1))+lambda*0.5*Delta*(Zi(i+1)-2*Zi(i)+Zi(i-1))
+                    W_N(2,i) = W_O(2,i)-Delta*(Flux(1,i) - Flux(1,i-1)) + &
+                    & 0.5*dt*g*(terme_src_WB(W_O(1,i-1),W_O(1,i),Zi(i-1),Zi(i)))
                 end do
             else
                 do i = 2,(Ns-1)
                     W_N(1,i) = W_O(1,i) - Delta*(Flux(1,i) - Flux(1,i-1))
-                    W_N(2,i) = W_O(2,i) - Delta*(Flux(2,i) - Flux(2,i-1)) + dt*terme_src(W_O(1,i),dx,Zi(i-1), Zi(i+1))
+                    W_N(2,i) = W_O(2,i) - Delta*(Flux(2,i) - Flux(2,i-1)) + & 
+                    & dt*terme_src(W_O(1,i),dx,Zi(i-1), Zi(i+1))
                 end do
             end if
 
-            ! Conditions aux limites
-            !if (condition == 'D') then 
-            !    ! Dirichlet
-            !    W_N(1,1) = W_O(1,1)
-            !    W_N(1,Ns) = W_O(1,Ns)
-            !    W_N(2,1) = W_O(2,1)
-            !    W_N(2,Ns) = W_O(2,Ns)
-            !else if (condition == 'P') then
-            !    ! condition periodique
-            !    W_N(:,1) = W_O(:,1) - (dt/dx)* (Flux(:,1) - Flux(:,(Ns-1)))
-            !    W_N(:,Ns) = W_N(:,1)
-            !else ! par defaut on prend des conditions de Neumann
-            !    W_N(1,1) = W_N(1,2)
-            !    W_N(1,Ns) = W_N(1,Ns-1)
-            !    W_N(2,1) = W_N(2,2)
-            !    W_N(2,Ns) = W_N(2,Ns-1)
-            !end if
-
             ! conditions aux bords en amont
             do i = 1,2
-                !write(6,*) 'amont', i, cond(i,1)
                 if (cond(i,1) == -1.0_rp) then
                     W_N(i,1) = W_N(i,2)
                 else if (cond(i,1) == 0.0_rp) then
@@ -265,7 +262,6 @@ program systeme_SW
             end do
             ! conditions aux bords en aval
             do i = 1,2
-                !write(6,*) 'aval', i, cond(i,2)
                 if (cond(i,2) == -1.0_rp) then
                     W_N(i,Ns) = W_N(i,Ns-1)
                 else if (cond(i,2) == 0.0_rp) then
