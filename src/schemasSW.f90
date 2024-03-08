@@ -94,6 +94,7 @@ module schemasSW
         end do
 
         lambda = 2.*dt/dx
+        ! flux HLL
         do i = 1,Ns-1
             hl = W_Om(1,i)
             hr = W_Op(1,i)
@@ -109,5 +110,40 @@ module schemasSW
         end do
 
     end subroutine flux_recons_hydro
+
+
+    subroutine solveur_WB(Ns, W_O, W_N, Zi, dx, dt, W_Om, W_Op, lambda)
+        ! solveur de Riemann pour le schema type Godunov WB
+        integer, intent(in) :: Ns
+        real(rp), intent(in) :: dx,dt
+        real(rp), intent(out) :: lambda
+        real(rp), dimension(2,Ns), intent(in) :: W_O
+        real(rp), dimension(2,Ns), intent(in) :: W_N
+        real(rp), dimension(Ns), intent(in) :: Zi
+        real(rp), dimension(2,Ns), intent(out) :: W_Op
+        real(rp), dimension(2,Ns), intent(out) :: W_Om
+        integer :: i
+        real(rp) :: qhll, hhll, hle, hre, qle, qre, sigma
+
+        lambda = 2.*dt/dx
+        ! on calcule W_Op et W_Om
+        do i = 1,Ns-1
+            ! pour q
+            qhll = W_N(2,i)
+            qle = qhll -0.5*dx*g/lambda*(0.5*(W_O(1,i)+W_O(1,i+1))*(Zi(i+1)-Zi(i)))
+            qre = qle
+            W_Om(2,i) = qle
+            W_Op(2,i) = qre
+            ! pour h
+            hhll = W_N(1,i)
+            hle = hhll+0.5*(Zi(i+1)-Zi(i))
+            hre = hhll-0.5*(Zi(i+1)-Zi(i))
+            ! controle de la positivite
+            sigma = min(hhll, W_O(1,i), W_O(1,i+1))
+            W_Om(1,i) = min(max(hle,sigma), 2.*hhll-sigma)
+            W_Op(1,i) = min(max(hre,sigma), 2.*hhll-sigma)
+        end do
+
+    end subroutine solveur_WB
 
 end module schemasSW
