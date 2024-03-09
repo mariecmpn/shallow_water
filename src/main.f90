@@ -237,8 +237,8 @@ program systeme_SW
             else if (schema == 'GN') then
                 do i = 2,(Ns-1)
                     W_N(1,i) = W_O(1,i) - Delta*(Flux(1,i) - Flux(1,i-1))
-                    W_N(2,i) = W_O(2,i)-Delta*(Flux(2,i)-Flux(2,i-1))+&
-                    & dx*0.5/lambda*terme_src_nonWB(dx,W_O(1,i-1),W_O(1,i),Zi(i-1),Zi(i))
+                    W_N(2,i) = W_O(2,i)-Delta*(Flux(2,i)-Flux(2,i-1))+ &
+                    & dt*terme_src_nonWB(dx,W_O(1,i-1),W_O(1,i),Zi(i-1),Zi(i))
                 end do
             else if (schema == 'WB') then
                 do i = 2,Ns-1
