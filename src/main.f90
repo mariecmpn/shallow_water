@@ -17,7 +17,7 @@ program systeme_SW
     real(rp), dimension(:,:), allocatable :: Flux ! tableau des flux numeriques
     real(rp), dimension(:), allocatable :: Zi ! tableau pour la topographie
     real(rp), dimension(:), allocatable :: Err_u, Err_h ! tableaux pour les erreurs (si pas de graphe de convergence)
-    real(rp), dimension(:,:), allocatable :: Err ! tableaux pour les erreurs (si graphe de convergence)
+    real(rp), dimension(:,:), allocatable :: Err, Err_inf ! tableaux pour les erreurs (si graphe de convergence)
     integer, dimension(:), allocatable :: N ! tableaux pour les Ns si graphe de convergence
     character(len = 1) :: conv ! convergence ou non
     real(rp), dimension(2,2) :: cond ! conditions aux bords
@@ -47,7 +47,7 @@ program systeme_SW
         write(6,*) 'Ns_fin = ', Ns1
         write(6,*)
 
-        allocate(N(nb),Err(3,nb))
+        allocate(N(nb),Err(3,nb), Err_inf(3,nb))
         dn = (Ns1 - Ns)/(nb-1)
         do i = 1,nb
             N(i) = Ns + (i-1)*dn
@@ -163,19 +163,23 @@ program systeme_SW
 
             write(6,*) 'Nombre d iterations: ', Nb_iter
             Err(2,j) = norme_L2(W_O(2,:),N(j))
+            Err_inf(2,j) = norme_inf(W_O(2,:),N(j))
             do i = 1,N(j)
                 Err_h(i) = W_O(1,i) + Zi(i) - hR
             end do
             Err(1,j) = norme_L2(Err_h,N(j))
+            Err_inf(1,j) = norme_inf(Err_h,N(j))
             write(6,*)
             Err(3,j) = dx
+            Err_inf(3,j) = dx
 
             deallocate(W_O, W_N, Flux, Err_u, Err_h, Zi, W_Om, W_Op)
         end do
 
         ! Enregistrement des erreurs
-        write(6,*) 'Enregistrement dans le fichier erreurs.dat'
-        call sauvegarde_conv('erreurs.dat', nb, Err)
+        write(6,*) 'Enregistrement dans les fichier erreursL2.dat et erreursinf.dat'
+        call sauvegarde_conv('erreursL2.dat', nb, Err)
+        call sauvegarde_conv('erreursinf.dat', nb, Err_inf)
 
         deallocate(Err, N)
 
@@ -281,8 +285,10 @@ program systeme_SW
                 call solveur_WB(Ns, W_O, W_N, Zi, dx, dt, W_Om, W_Op, lambda)
                 ! Pas en bilan de flux
                 do i = 2,Ns-1
-                    W_N(1,i) = W_O(1,i) - Delta*(lambda*(W_O(1,i)-W_Op(1,i-1)) + lambda*(W_O(1,i)-W_Om(1,i)))
-                    W_N(2,i) = W_O(2,i) - Delta*(lambda*(W_O(2,i)-W_Op(2,i-1)) + lambda*(W_O(2,i)-W_Om(2,i)))
+                    !W_N(1,i) = W_O(1,i) - Delta*(lambda*(W_O(1,i)-W_Op(1,i-1)) + lambda*(W_O(1,i)-W_Om(1,i)))
+                    !W_N(2,i) = W_O(2,i) - Delta*(lambda*(W_O(2,i)-W_Op(2,i-1)) + lambda*(W_O(2,i)-W_Om(2,i)))
+                    W_N(1,i) = W_O(1,i) - Delta*(lambda*(W_Op(1,i-1)-W_O(1,i)) - lambda*(W_Om(1,i)-W_O(1,i)))
+                    W_N(2,i) = W_O(2,i) - Delta*(lambda*(W_Op(2,i-1)-W_O(2,i)) - lambda*(W_Om(2,i)-W_O(2,i)))
                 end do
                 ! conditions aux bords en amont
                 do i = 1,2
@@ -319,10 +325,12 @@ program systeme_SW
         write(6,*) 'Nombre d iterations', Nb_iter
         write(6,*)
         write(6,*) 'Norme L^2 de u_i^n: ', norme_L2(W_O(2,:),Ns)
+        write(6,*) 'Norme infinie de u_i^n: ', norme_inf(W_O(2,:),Ns)
         do i = 1,Ns
-            Err_h(i) = W_O(1,i) + Zi(i) - hR
+            Err_h(i) = W_O(1,i) + Zi(i) - initial_h(x_deb+i*dx, hL, hR, x_deb, x_fin)
         end do
         write(6,*) 'Norme L^2 de h_i^n+z_i-H: ', norme_L2(Err_h,Ns)
+        write(6,*) 'Norme infinie de h_i^n+z_i-H: ', norme_inf(Err_h,Ns)
         write(6,*)
         
         ! on sauvegarde les resultats pour t = T_fin

@@ -295,6 +295,16 @@ module initialisation_sauvegarde
         norme_L2 = sqrt(norme_L2)
     end function norme_L2
 
+    real(rp) function norme_inf(U, Ns)
+        integer :: Ns
+        real(rp), dimension(Ns) :: U
+        integer :: i
+        norme_inf = 0._rp
+        do i = 1,Ns
+            norme_inf = max(norme_inf,abs(U(i)))
+        end do
+    end function norme_inf
+
     real(rp) function vitesse(W)
         real(rp), dimension(2) :: W
         if (W(1) > 1.E-6) then 
