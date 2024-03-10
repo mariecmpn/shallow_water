@@ -227,7 +227,7 @@ program systeme_SW
             else if (schema == 'GN') then
                 call flux_HLL_syst(Ns, Flux, W_O, dx, dt, lambda)
             else if (schema == 'WB') then
-                call flux_HLL_syst(Ns, Flux, W_O, dx, dt, lambda)
+                call flux_GDWB(Ns, Flux, W_O, Zi, dx, dt)
             end if
 
             ! update calcul de u_i^{n+1}
@@ -235,28 +235,28 @@ program systeme_SW
             if (schema == 'HY') then
                 do i = 2,(Ns-1)
                     W_N(1,i) = W_O(1,i) - Delta*(Flux(1,i) - Flux(1,i-1))
-                    W_N(2,i) = W_O(2,i) - Delta*(Flux(2,i) - Flux(2,i-1)) +& 
+                    W_N(2,i) = W_O(2,i) - Delta*(Flux(2,i) - Flux(2,i-1)) + & 
                     & dt*terme_src_hy(dx,W_Op(1,i-1),W_Om(1,i))
                 end do
             else if (schema == 'GN') then
                 do i = 2,(Ns-1)
                     W_N(1,i) = W_O(1,i) - Delta*(Flux(1,i) - Flux(1,i-1))
                     W_N(2,i) = W_O(2,i)-Delta*(Flux(2,i)-Flux(2,i-1))+ &
-                    & dt*terme_src_nonWB(dx,W_O(1,i-1),W_O(1,i),Zi(i-1),Zi(i))
+                    & 0.5*dt*(terme_src_nonWB(dx,W_O(1,i-1),W_O(1,i),Zi(i-1),Zi(i)) &
+                    & +terme_src_nonWB(dx,W_O(1,i),W_O(1,i+1),Zi(i),Zi(i+1)))
                 end do
             else if (schema == 'WB') then
                 do i = 2,Ns-1
                     W_N(1,i) = W_O(1,i) - Delta*(Flux(1,i) - Flux(1,i-1))
-                    W_N(2,i) = W_O(2,i) - Delta*(Flux(2,i) - Flux(2,i-1))
-                    ! Pas en bilan de flux
-                    !W_N(1,i) = W_O(1,i) - Delta*(lambda*(W_O(1,i)-W_Op(1,i-1)) + lambda*(W_O(1,i)-W_Om(1,i)))
-                    !W_N(2,i) = W_O(2,i) - Delta*(lambda*(W_O(2,i)-W_Op(2,i-1)) + lambda*(W_O(2,i)-W_Om(2,i)))
+                    W_N(2,i) = W_O(2,i) - Delta*(Flux(2,i) - Flux(2,i-1)) &
+                    & -0.5*dt*(terme_src_WB(W_O(1,i-1),W_O(1,i),Zi(i-1),Zi(i),dx) &
+                    & +terme_src_WB(W_O(1,i),W_O(1,i+1),Zi(i),Zi(i+1),dx))
                 end do
             else
                 do i = 2,(Ns-1)
                     W_N(1,i) = W_O(1,i) - Delta*(Flux(1,i) - Flux(1,i-1))
-                    W_N(2,i) = W_O(2,i) - Delta*(Flux(2,i) - Flux(2,i-1)) + & 
-                    & dt*terme_src(W_O(1,i),dx,Zi(i-1), Zi(i+1))
+                    W_N(2,i) = W_O(2,i) - Delta*(Flux(2,i) - Flux(2,i-1)) & 
+                    & - dt*terme_src(W_O(1,i),dx,Zi(i-1), Zi(i+1))
                 end do
             end if
 
@@ -280,37 +280,6 @@ program systeme_SW
                     W_N(i,Ns) = cond(i,2)
                 end if
             end do
-
-            if (schema == 'WB') then
-                call solveur_WB(Ns, W_O, W_N, Zi, dx, dt, W_Om, W_Op, lambda)
-                ! Pas en bilan de flux
-                do i = 2,Ns-1
-                    !W_N(1,i) = W_O(1,i) - Delta*(lambda*(W_O(1,i)-W_Op(1,i-1)) + lambda*(W_O(1,i)-W_Om(1,i)))
-                    !W_N(2,i) = W_O(2,i) - Delta*(lambda*(W_O(2,i)-W_Op(2,i-1)) + lambda*(W_O(2,i)-W_Om(2,i)))
-                    W_N(1,i) = W_O(1,i) - Delta*(lambda*(W_Op(1,i-1)-W_O(1,i)) - lambda*(W_Om(1,i)-W_O(1,i)))
-                    W_N(2,i) = W_O(2,i) - Delta*(lambda*(W_Op(2,i-1)-W_O(2,i)) - lambda*(W_Om(2,i)-W_O(2,i)))
-                end do
-                ! conditions aux bords en amont
-                do i = 1,2
-                    if (cond(i,1) == -1.0_rp) then
-                        W_N(i,1) = W_N(i,2)
-                    else if (cond(i,1) == 0.0_rp) then
-                        W_N(i,1) = W_O(i,1)
-                    else
-                        W_N(i,1) = cond(i,1)
-                    end if
-                end do
-                ! conditions aux bords en aval
-                do i = 1,2
-                    if (cond(i,2) == -1.0_rp) then
-                        W_N(i,Ns) = W_N(i,Ns-1)
-                    else if (cond(i,2) == 0.0_rp) then
-                        W_N(i,Ns) = W_O(i,Ns)
-                    else
-                        W_N(i,Ns) = cond(i,2)
-                    end if
-                end do
-            end if
             
             !mise a jour
             W_O(1:2,1:Ns) = W_N(1:2,1:Ns)

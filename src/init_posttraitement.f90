@@ -342,14 +342,14 @@ module initialisation_sauvegarde
         terme_src_hy = g*(hj**2-hi**2)/(2._rp*dx)
     end function terme_src_hy
 
-    real(rp) function terme_src_nonWB(dx, hi, hj, zi, zj)
-        real(rp) :: dx, hi, hj, zi, zj
-        terme_src_nonWB = -g*((hi+hj)/2.)*((zj-zi)/dx)
+    real(rp) function terme_src_nonWB(dx, hl, hr, zl, zr)
+        real(rp) :: dx, hl, hr, zl, zr
+        terme_src_nonWB = -g*((hl+hr)/2.)*((zr-zl)/dx)
     end function terme_src_nonWB
 
-    real(rp) function terme_src_WB(hl,hr,zr,zl)
-        real(rp) :: hl, hr, zl, zr
-        terme_src_WB = 0.5*(hl+hr)*(zr-zl)
+    real(rp) function terme_src_WB(hl,hr,zl,zr,dx)
+        real(rp) :: hl, hr, zl, zr, dx
+        terme_src_WB = 0.5*g*(hr+hl)*((zr-zl)/dx)
     end function terme_src_WB
 
     subroutine topographie(Zi, Ns, dx, x_deb, topo)
