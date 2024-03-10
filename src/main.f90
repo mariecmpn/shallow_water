@@ -303,9 +303,9 @@ program systeme_SW
         write(6,*)
         
         ! on sauvegarde les resultats pour t = T_fin
-        write(6,*) 'Enregistrement dans les fichiers solution_h.dat et solution_u.dat'
+        write(6,*) 'Enregistrement des solutions (h, u, q) dans le fichier solutions.dat'
         write(6,*) 'Enregistrement de la topographie dans le fichier topo.dat'
-        call sauvegarde_syst('solution_h.dat','solution_u.dat', W_O, Ns, x_deb, x_fin, Zi)
+        call sauvegarde_syst('solutions.dat', W_O, Ns, x_deb, x_fin, Zi)
 
         deallocate(W_O, W_N, Flux, Err_u, Err_h, Zi, W_Om, W_Op)
     end if 

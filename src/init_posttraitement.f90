@@ -155,32 +155,29 @@ module initialisation_sauvegarde
     end subroutine initialisation_syst
 
 
-    subroutine sauvegarde_syst(file_name_h, file_name_u, W_O, Ns, x_deb, x_fin, Zi)
+    subroutine sauvegarde_syst(file_name, W_O, Ns, x_deb, x_fin, Zi)
         ! subroutine pour sauvegarde les solutions du probleme
         IMPLICIT NONE
-        character(len = *), intent(in) :: file_name_u, file_name_h ! noms des fichiers de sortie
+        character(len = *), intent(in) :: file_name ! noms des fichier de sortie
         integer, intent(in) :: Ns ! nombre de cellules
         real(rp), dimension(2,1:Ns), intent(in) :: W_O ! tableau a enregistrer
         real(rp), dimension(Ns), intent(in) :: Zi ! topographie a enregistrer si non nulle
         real(rp), intent(in) :: x_deb, x_fin ! debut et fin des x
         real(rp) :: x ! pour calculer x_i
         integer :: i ! pour boucle do
-        integer :: my_unit_1 = 60, my_unit_2 = 70, my_unit_3 = 80
+        integer :: my_unit_1 = 60, my_unit_2 = 70
 
-        open(my_unit_1, file = file_name_h, action = 'write', form = 'formatted', status = 'unknown')
-        open(my_unit_2, file = file_name_u, action = 'write', form = 'formatted', status = 'unknown')
-        open(my_unit_3, file = 'topo.dat', action = 'write', form = 'formatted', status = 'unknown')
+        open(my_unit_1, file = file_name, action = 'write', form = 'formatted', status = 'unknown')
+        open(my_unit_2, file = 'topo.dat', action = 'write', form = 'formatted', status = 'unknown')
 
         do i = 1,Ns
             x = x_deb + i*(x_fin-x_deb)/Ns
-            write(my_unit_1, *) x, W_O(1,i)+Zi(i)
-            write(my_unit_2, *) x, W_O(2,i)
-            write(my_unit_3, *) x, Zi(i)
+            write(my_unit_1, *) x, W_O(1,i)+Zi(i), W_O(2,i), (W_O(1,i)+Zi(i))*W_O(2,i)
+            write(my_unit_2, *) x, Zi(i)
         end do
 
         close(my_unit_1)
         close(my_unit_2)
-        close(my_unit_3)
     end subroutine sauvegarde_syst
 
     subroutine sauvegarde_conv(file_name, nb, Err)
