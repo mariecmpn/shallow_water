@@ -96,8 +96,7 @@ program systeme_SW
                 else if (schema == 'GN') then
                     call flux_HLL_syst(N(j), Flux, W_O, dx, dt, lambda)
                 else if (schema == 'WB') then
-                    !call flux_HLL_syst(N(j), Flux, W_O, dx, dt, lambda)
-                    !call solveur_WB(Ns, W_O, Zi, dx, dt, W_Om, W_Op, lambda)
+                    call flux_GDWB(N(j), Flux, W_O, Zi, dx, dt)
                 end if
 
                 ! update calcul de u_i^{n+1}
@@ -116,12 +115,10 @@ program systeme_SW
                     end do
                 else if (schema == 'WB') then
                     do i = 2,N(j)-1
-                        !W_N(1,i) = W_O(1,i)-Delta*(Flux(1,i) - Flux(1,i-1))+lambda*0.5*Delta*(Zi(i+1)-2*Zi(i)+Zi(i-1))
-                        !W_N(2,i) = W_O(2,i)-Delta*(Flux(1,i) - Flux(1,i-1)) &
-                        !& +0.5*dt*g*(terme_src_WB(W_O(1,i-1),W_O(1,i),Zi(i-1),Zi(i)))
-                        ! Pas en bilan de flux
-                        W_N(1,i) = W_O(1,i) - Delta*(lambda*(W_O(1,i)-W_Op(1,i-1)) + lambda*(W_O(1,i)-W_Om(1,i)))
-                        W_N(2,i) = W_O(2,i) - Delta*(lambda*(W_O(2,i)-W_Op(2,i-1)) + lambda*(W_O(2,i)-W_Om(2,i)))
+                        W_N(1,i) = W_O(1,i) - Delta*(Flux(1,i) - Flux(1,i-1))
+                        W_N(2,i) = W_O(2,i) - Delta*(Flux(2,i) - Flux(2,i-1)) &
+                        & -0.5*dt*(terme_src_WB(W_O(1,i-1),W_O(1,i),Zi(i-1),Zi(i),dx) &
+                        & +terme_src_WB(W_O(1,i),W_O(1,i+1),Zi(i),Zi(i+1),dx))
                     end do
                 else
                     do i = 2,(N(j)-1)

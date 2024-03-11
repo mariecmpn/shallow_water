@@ -123,9 +123,9 @@ module schemasSW
 
         lambda = 2.*dt/dx
         do i =1,Ns-1
-            Flux(1,i) = 0.5*(W_O(2,i) + W_O(2,i+1))-0.5*lambda*((W_O(1,i+1)+Zi(i+1))-(W_O(1,i)+Zi(i)))
+            Flux(1,i) = 0.5*(W_O(2,i) + W_O(2,i+1))-0.5/lambda*((W_O(1,i+1)+Zi(i+1))-(W_O(1,i)+Zi(i)))
             Flux(2,i) = 0.5*(W_O(2,i)+g*0.5*W_O(1,i)**2+W_O(2,i+1)+g*0.5*W_O(1,i+1)**2) &
-            & -0.5*lambda*(W_O(2,i+1)-W_O(2,i))
+            & -0.5/lambda*(W_O(2,i+1)-W_O(2,i))
         end do
 
     end subroutine flux_GDWB
