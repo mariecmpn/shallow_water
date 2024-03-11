@@ -2,7 +2,7 @@
 FC = gfortran-11
 
 # Options de compilation
-FFLAGS = -O0
+FFLAGS = -O3
 
 # dossier pour les fichiers binaires
 ODIR = ../bin

@@ -4,7 +4,9 @@ module initialisation_sauvegarde
 
     contains 
 
-    ! Fonction condition initiale qui prend en compte la fonction demandee
+    !------------------------------------------
+    !     FONCTIONS CONDITIONS INITIALES
+    !------------------------------------------
 
     real(rp) function initial_u(x, uL, uR, x_deb, x_fin)
         ! fonction condition initiale pour u
@@ -31,7 +33,10 @@ module initialisation_sauvegarde
         end if
     end function initial_h
 
-    ! Lecture des donnees, initialisation et sauvegarde
+    !------------------------------------------
+    !    LECTURE DONNEES, INITIALISATION,
+    !               SAUVEGARDE
+    !------------------------------------------
 
     subroutine lecture_donnees_syst(file_name,x_deb,x_fin,Ns,CFL,T_fin,cond, &
                                     schema,uL,uR,hL,hR,topo,conv,Ns1,nb)
@@ -197,7 +202,10 @@ module initialisation_sauvegarde
         close(my_unit)
     end subroutine sauvegarde_conv
 
-    ! Pour passer des variables conservatives aux variables primitives et inversement
+    !------------------------------------------
+    !     PASSAGE VARIABLES CONSERVATIVES
+    !      -> PRIMITIVES ET INVERSEMENT
+    !------------------------------------------
 
     subroutine conserv_to_prim(W_O, Ns)
         ! Subroutine pour passer des variables conservatives aux variables primitives
@@ -222,7 +230,9 @@ module initialisation_sauvegarde
         end do
     end subroutine prim_to_conserv
 
-    ! Algebre du systeme (matrice A, fonction F...)
+    !------------------------------------------
+    !           ALGEBRE DU SYSTEME
+    !------------------------------------------
 
     real(rp) function lambda_1(W)
         ! fonction pour la valeur propre 1 du systeme
@@ -252,26 +262,6 @@ module initialisation_sauvegarde
         lambda_2_cons = W(2)/W(1) + sqrt(g*W(1))
     end function lambda_2_cons
 
-    function A(W)
-        ! matrice A en variables primitives
-        real(rp), dimension(2,2) :: A
-        real(rp), dimension(2) :: W
-        A(1,1) = W(2)
-        A(1,2) = W(1)
-        A(2,1) = g
-        A(2,2) = W(2)
-    end function A
-
-    function grad_F(W)
-        ! matrice gradient de F en variables conservatives
-        real(rp), dimension(2,2) :: grad_F
-        real(rp), dimension(2) :: W
-        grad_F(1,1) = 0._rp
-        grad_F(1,2) = 1._rp
-        grad_F(2,1) = -(W(2)/W(1))**2+g*W(1)
-        grad_F(2,2) = 2.*(W(2)/W(1))
-    end function grad_F
-
     function F(W)
         ! fonction pour calculer la fonction F flux exact
         ! W en variables conservatives
@@ -281,7 +271,22 @@ module initialisation_sauvegarde
         F(2) = (W(2)**2)/W(1) + 0.5_rp*g*W(1)**2
     end function F
 
+    real(rp) function vitesse(W)
+        ! calcul vitesse (pour passage en variables primitives par exemple)
+        real(rp), dimension(2) :: W
+        if (W(1) > 1.E-6) then 
+            vitesse = W(2)/W(1)
+        else 
+            vitesse = 0._rp
+        end if
+    end function vitesse
+
+    !------------------------------------------
+    !               NORMES
+    !------------------------------------------
+
     real(rp) function norme_L2(U, Ns)
+        ! fonction qui calcule la norme L^2
         integer :: Ns
         real(rp), dimension(Ns) :: U
         integer :: i
@@ -293,6 +298,7 @@ module initialisation_sauvegarde
     end function norme_L2
 
     real(rp) function norme_inf(U, Ns)
+        ! fonction qui calcule la norme infinie
         integer :: Ns
         real(rp), dimension(Ns) :: U
         integer :: i
@@ -302,14 +308,9 @@ module initialisation_sauvegarde
         end do
     end function norme_inf
 
-    real(rp) function vitesse(W)
-        real(rp), dimension(2) :: W
-        if (W(1) > 1.E-6) then 
-            vitesse = W(2)/W(1)
-        else 
-            vitesse = 0._rp
-        end if
-    end function vitesse
+    !------------------------------------------
+    !     TERME SOURCE ET TOPOGRAPHIE
+    !------------------------------------------
 
     real(rp) function Z(x,topo) ! fonction pour la topographie
         real(rp) :: x
@@ -324,7 +325,7 @@ module initialisation_sauvegarde
     end function Z
 
     real(rp) function terme_src(h, dx, zi, zj)
-        ! fonction pour le calcul du terme source
+        ! fonction pour le calcul du terme source 
         real(rp) :: h, dx
         real(rp) :: zi,zj
 
@@ -340,11 +341,13 @@ module initialisation_sauvegarde
     end function terme_src_hy
 
     real(rp) function terme_src_nonWB(dx, hl, hr, zl, zr)
+        ! fonction pour le calcul du terme source pour le schema type Godunov non WB
         real(rp) :: dx, hl, hr, zl, zr
         terme_src_nonWB = -g*((hl+hr)/2.)*((zr-zl)/dx)
     end function terme_src_nonWB
 
     real(rp) function terme_src_WB(hl,hr,zl,zr,dx)
+        ! fonction pour le calcul du terme source pour le schema type Godunov WB
         real(rp) :: hl, hr, zl, zr, dx
         terme_src_WB = 0.5*g*(hr+hl)*((zr-zl)/dx)
     end function terme_src_WB

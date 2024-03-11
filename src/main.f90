@@ -21,7 +21,7 @@ program systeme_SW
     integer, dimension(:), allocatable :: N ! tableaux pour les Ns si graphe de convergence
     character(len = 1) :: conv ! convergence ou non
     real(rp), dimension(2,2) :: cond ! conditions aux bords
-    real(rp) :: lambda
+    real(rp) :: lambda ! lambda pour schema HLL
     character(len = 2) :: schema ! schema utilise
     integer :: Nb_iter = 0 ! nombre d'iterations en temps
     integer :: topo ! quelle topographie on utilise
@@ -53,7 +53,7 @@ program systeme_SW
             N(i) = Ns + (i-1)*dn
         end do
 
-        do j = 1,nb
+        do j = 1,nb ! boucle sur les differents Ns
             write(6,*) 'Calcul pour Ns = ', N(j)
             ! calcul pas de maillage en espace dx
             dx = (x_fin - x_deb)/N(j)
@@ -162,6 +162,7 @@ program systeme_SW
             end do
 
             write(6,*) 'Nombre d iterations: ', Nb_iter
+            ! calculs d'erreurs
             Err(2,j) = norme_L2(W_O(2,:),N(j))
             Err_inf(2,j) = norme_inf(W_O(2,:),N(j))
             do i = 1,N(j)
@@ -216,17 +217,17 @@ program systeme_SW
             call prim_to_conserv(W_O, Ns)
             
             ! calcul des flux
-            if (schema == 'LF') then
+            if (schema == 'LF') then ! Lax-Friedrichs
                 call flux_LF_syst(Ns, Flux, W_O, dt, dx)
-            else if (schema == 'RS') then
+            else if (schema == 'RS') then ! Rusanov
                 call flux_RS_syst(Ns, Flux, W_O)
-            else if (schema == 'HL') then
+            else if (schema == 'HL') then ! HLL
                 call flux_HLL_syst(Ns, Flux, W_O, dx, dt, lambda)
-            else if (schema == 'HY') then
+            else if (schema == 'HY') then ! reconstruction hydrostatique
                 call flux_recons_hydro(Ns, Flux, W_O, Zi, dx, dt, W_Om, W_Op)
-            else if (schema == 'GN') then
+            else if (schema == 'GN') then ! Godunov non well-balanced
                 call flux_HLL_syst(Ns, Flux, W_O, dx, dt, lambda)
-            else if (schema == 'WB') then
+            else if (schema == 'WB') then ! Godunov well-balanced
                 call flux_GDWB(Ns, Flux, W_O, Zi, dx, dt)
             end if
 
@@ -293,6 +294,7 @@ program systeme_SW
 
         write(6,*) 'Nombre d iterations', Nb_iter
         write(6,*)
+        ! calculs d'erreurs
         write(6,*) 'Norme L^2 de u_i^n: ', norme_L2(W_O(2,:),Ns)
         write(6,*) 'Norme infinie de u_i^n: ', norme_inf(W_O(2,:),Ns)
         do i = 1,Ns

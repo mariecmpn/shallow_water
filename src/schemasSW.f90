@@ -6,7 +6,7 @@ module schemasSW
     contains
 
     subroutine flux_LF_syst(Ns, Flux, W_O, dt, dx)
-    ! FLUX POUR SCHEMA DE LAX-FRIEDRICHS
+        ! FLUX POUR SCHEMA DE LAX-FRIEDRICHS
         IMPLICIT NONE
         real(rp), intent(in) :: dt, dx
         integer, intent(in) :: Ns
@@ -24,7 +24,7 @@ module schemasSW
 
 
     subroutine flux_RS_syst(Ns, Flux, W_O)
-    ! FLUX POUR LE SCHEMA DE RUSANOV
+        ! FLUX POUR LE SCHEMA DE RUSANOV
         integer, intent(in) :: Ns
         real(rp), dimension(2,Ns), intent(inout) :: Flux
         real(rp), dimension(2,Ns), intent(in) :: W_O
@@ -44,28 +44,28 @@ module schemasSW
 
     subroutine flux_HLL_syst(Ns, Flux, W_O, dx, dt, lambda)
         ! FLUX POUR SCHEMA HLL
-            integer, intent(in) :: Ns
-            real(rp), intent(in) :: dt, dx
-            real(rp), dimension(2,Ns), intent(inout) :: Flux
-            real(rp), dimension(2,Ns), intent(in) :: W_O
-            real(rp), intent(out) :: lambda
-            integer :: i
-            real(rp) :: hl, hr, ul, ur, pil, pir
+        integer, intent(in) :: Ns
+        real(rp), intent(in) :: dt, dx
+        real(rp), dimension(2,Ns), intent(inout) :: Flux
+        real(rp), dimension(2,Ns), intent(in) :: W_O
+        real(rp), intent(out) :: lambda
+        integer :: i
+        real(rp) :: hl, hr, ul, ur, pil, pir
 
-            lambda = 2.*dt/dx
-            do i=1,Ns-1
-                hl = W_O(1,i)
-                hr = W_O(1,i+1)
+        lambda = 2.*dt/dx
+        do i=1,Ns-1
+            hl = W_O(1,i)
+            hr = W_O(1,i+1)
        
-                ul = vitesse(W_O(:,i))
-                ur = vitesse(W_O(:,i+1))
+            ul = vitesse(W_O(:,i))
+            ur = vitesse(W_O(:,i+1))
        
-                pil = hl*ul**2 + g*0.5*hl**2
-                pir = hr*ur**2 + g*0.5*hr**2
+            pil = hl*ul**2 + g*0.5*hl**2
+            pir = hr*ur**2 + g*0.5*hr**2
        
-                Flux(1,i) = 0.5*(hl*ul+hr*ur) - 0.5/lambda*(hr-hl)
-                Flux(2,i) = 0.5*(pil + pir) -0.5/lambda*(hr*ur-hl*ul)
-             end do
+            Flux(1,i) = 0.5*(hl*ul+hr*ur) - 0.5/lambda*(hr-hl)
+            Flux(2,i) = 0.5*(pil + pir) -0.5/lambda*(hr*ur-hl*ul)
+        end do
     end subroutine flux_HLL_syst
 
 
@@ -112,6 +112,7 @@ module schemasSW
     end subroutine flux_recons_hydro
 
     subroutine flux_GDWB(Ns, Flux, W_O, Zi, dx, dt)
+        ! FLUX POUR LE SCHEMA TYPE GODUNOV WB
         integer, intent(in) :: Ns
         real(rp), intent(in) :: dt, dx
         real(rp), dimension(2,Ns), intent(inout) :: Flux
