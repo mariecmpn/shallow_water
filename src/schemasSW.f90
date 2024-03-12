@@ -119,15 +119,24 @@ module schemasSW
         real(rp), dimension(2,Ns), intent(in) :: W_O
         real(rp), dimension(Ns), intent(in) :: Zi
         integer :: i
-        real(rp) :: lambda
+        real(rp) :: lambda, pil,pir,hl,hr,ul,ur,zr,zl
 
         lambda = 2.*dt/dx
         do i =1,Ns-1
-            Flux(1,i) = 0.5*(W_O(2,i) + W_O(2,i+1))-0.5/lambda*((W_O(1,i+1)+Zi(i+1))-(W_O(1,i)+Zi(i)))
-            Flux(2,i) = 0.5*(W_O(2,i)+g*0.5*W_O(1,i)**2+W_O(2,i+1)+g*0.5*W_O(1,i+1)**2) &
-            & -0.5/lambda*(W_O(2,i+1)-W_O(2,i))
+            hl = W_O(1,i)
+            hr = W_O(1,i+1)
+       
+            ul = vitesse(W_O(:,i))
+            ur = vitesse(W_O(:,i+1))
+       
+            pil = hl*ul**2 + g*0.5*hl**2
+            pir = hr*ur**2 + g*0.5*hr**2
+            zr = Zi(i+1)
+            zl = Zi(i)
+       
+            Flux(1,i) = 0.5*(hl*ul+hr*ur) - 0.5/lambda*((hr+zr)-(hl+zl))
+            Flux(2,i) = 0.5*(pil + pir) -0.5/lambda*(hr*ur-hl*ul)
         end do
-
     end subroutine flux_GDWB
 
 end module schemasSW

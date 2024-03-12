@@ -89,11 +89,11 @@ module initialisation_sauvegarde
             write(6,*) '-h: ', cond(1,1)
         end if
         if (cond(2,1) == -1.0_rp) then
-            write(6,*) '-u: Neumann'
+            write(6,*) '-q: Neumann'
         else if (cond(2,1) == 0.0_rp) then
-            write(6,*) '-u: Dirichlet'
+            write(6,*) '-q: Dirichlet'
         else
-            write(6,*) '-u: ', cond(2,1)
+            write(6,*) '-q: ', cond(2,1)
         end if
         write(6,*) 'En aval:'
         if (cond(1,2) == -1.0_rp) then
@@ -104,11 +104,11 @@ module initialisation_sauvegarde
             write(6,*) '-h: ', cond(1,2)
         end if
         if (cond(2,2) == -1.0_rp) then
-            write(6,*) '-u: Neumann'
+            write(6,*) '-q: Neumann'
         else if (cond(2,2) == 0.0_rp) then
-            write(6,*) '-u: Dirichlet'
+            write(6,*) '-q: Dirichlet'
         else
-            write(6,*) '-u: ', cond(2,2)
+            write(6,*) '-q: ', cond(2,2)
         end if
 
         write(6,*)
