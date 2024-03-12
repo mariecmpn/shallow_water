@@ -2,7 +2,7 @@ PROJET 1 - Schéma volumes finis pour Shallow Water
 
 Author: Marie COMPAIN
 
-Contenu du dossier:
+CONTENU DU DOSSIER:
 - src/main.f90: programme principal du code Shallow Water
 - src/schemasSW.f90: module pour les schémas numériques pour les équations de Shallow Water
 - src/numerics.f90: module pour la définition des constantes numériques (rp la double précision, g la constante de gravitation...)
@@ -10,6 +10,7 @@ Contenu du dossier:
 - src/makefile: Makefile du code
 - init.dat: fichier pour l'initialisation de variables, d'options d'exécution...
 - plot.gnu: exemple de script Gnuplot pour la visualisation des résultats
+-plot_conv.gnu: exemple de script Gnuplot pour les graphiques de convergence
 
-Compilation:
+COMPILATION:
 Aller dans le dossier src puis faire make. Le fichier exécutable sera stocké dans le dossier principal du code. Les options du code sont à définir dans le fichier init.dat.
