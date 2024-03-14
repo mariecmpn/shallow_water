@@ -10,7 +10,7 @@ module schemasSW
         IMPLICIT NONE
         real(rp), intent(in) :: dt, dx
         integer, intent(in) :: Ns
-        real(rp), dimension(2,Ns), intent(inout) :: Flux
+        real(rp), dimension(2,Ns-1), intent(inout) :: Flux
         real(rp), dimension(2,Ns), intent(in) :: W_O
         real(rp) :: Delta
         integer :: i
@@ -26,7 +26,7 @@ module schemasSW
     subroutine flux_RS_syst(Ns, Flux, W_O)
         ! FLUX POUR LE SCHEMA DE RUSANOV
         integer, intent(in) :: Ns
-        real(rp), dimension(2,Ns), intent(inout) :: Flux
+        real(rp), dimension(2,Ns-1), intent(inout) :: Flux
         real(rp), dimension(2,Ns), intent(in) :: W_O
         real(rp) :: Delta
         integer :: i
@@ -46,7 +46,7 @@ module schemasSW
         ! FLUX POUR SCHEMA HLL
         integer, intent(in) :: Ns
         real(rp), intent(in) :: dt, dx
-        real(rp), dimension(2,Ns), intent(inout) :: Flux
+        real(rp), dimension(2,Ns-1), intent(inout) :: Flux
         real(rp), dimension(2,Ns), intent(in) :: W_O
         real(rp), intent(out) :: lambda
         integer :: i
@@ -73,7 +73,7 @@ module schemasSW
         ! FLUX POUR LA RECONSTRUCTION HYDROSTATIQUE
         integer, intent(in) :: Ns
         real(rp), intent(in) :: dt, dx
-        real(rp), dimension(2,Ns), intent(inout) :: Flux
+        real(rp), dimension(2,Ns-1), intent(inout) :: Flux
         real(rp), dimension(2,Ns), intent(in) :: W_O
         real(rp), dimension(Ns), intent(in) :: Zi
         real(rp), dimension(2,Ns), intent(out) :: W_Op
@@ -115,7 +115,7 @@ module schemasSW
         ! FLUX POUR LE SCHEMA TYPE GODUNOV WB
         integer, intent(in) :: Ns
         real(rp), intent(in) :: dt, dx
-        real(rp), dimension(2,Ns), intent(inout) :: Flux
+        real(rp), dimension(2,Ns-1), intent(inout) :: Flux
         real(rp), dimension(2,Ns), intent(in) :: W_O
         real(rp), dimension(Ns), intent(in) :: Zi
         integer :: i
@@ -138,5 +138,32 @@ module schemasSW
             Flux(2,i) = 0.5*(pil + pir) -0.5/lambda*(hr*ur-hl*ul)
         end do
     end subroutine flux_GDWB
+
+
+    subroutine solveur_friclin(Ns, W_O, dx, dt, alpha, W_Op, lambda)
+        ! solveur pour la friction lineaire
+        integer, intent(in) :: Ns
+        real(rp), intent(in) :: dt, dx, alpha
+        real(rp), intent(out) :: lambda
+        real(rp), dimension(2,Ns), intent(in) :: W_O
+        real(rp), dimension(2,Ns), intent(out) :: W_Op
+        integer :: i
+        real(rp) :: ul, ur, hl, hr, pil, pir
+
+        lambda = 2.*dt/dx
+        do i = 1,Ns-1
+            hl = W_O(1,i)
+            hr = W_O(1,i+1)
+            ul = vitesse(W_O(:,i))
+            ur = vitesse(W_O(:,i+1))
+            pil = hl*ul**2 + g*0.5*hl**2
+            pir = hr*ur**2 + g*0.5*hr**2
+
+            W_Op(1,i) = 0.5*(hl+hr) - 0.5/lambda*(hr*ur-hl*ul)
+            W_Op(2,i) = 0.5*(hl*ul+hr*ur) &
+            & - 0.5/lambda*((1.-exp(-alpha*dt))/(alpha*dt))*(pir - pil) &
+            & - 0.5/lambda*alpha*dx*((1.-exp(-alpha*dt))/(alpha*dt))*0.5*(hr*ur+hl*ul)
+        end do
+    end subroutine solveur_friclin
 
 end module schemasSW

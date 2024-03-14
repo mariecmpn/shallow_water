@@ -39,7 +39,7 @@ module initialisation_sauvegarde
     !------------------------------------------
 
     subroutine lecture_donnees_syst(file_name,x_deb,x_fin,Ns,CFL,T_fin,cond, &
-                                    schema,uL,uR,hL,hR,topo,conv,Ns1,nb)
+                                    schema,uL,uR,hL,hR,topo,conv,Ns1,nb,alpha)
         ! Subroutine pour recuperer les donnees du fichier file_name
         IMPLICIT NONE
         character(len = *), intent(in) :: file_name ! nom du fichier a ouvrir
@@ -54,6 +54,7 @@ module initialisation_sauvegarde
         character(len = 1), intent(inout) :: conv ! si on veut faire ou non des graphiques de convergence
         integer, intent(inout) :: Ns1, nb ! si 
         integer, intent(inout) :: topo ! si on veut une topographie ou non, et laquelle si oui
+        real(rp), intent(inout) :: alpha
         integer :: my_unit
 
         open(newunit = my_unit, file = file_name, action = 'read', form = 'formatted', status = 'old')
@@ -71,6 +72,7 @@ module initialisation_sauvegarde
         read(my_unit, *) cond(1,1), cond(2,1)
         read(my_unit, *) cond(1,2), cond(2,2)
         read(my_unit, *) schema
+        read(my_unit, *) alpha
         read(my_unit, *) hL, hR
         read(my_unit, *) uL, uR
         read(my_unit, *) topo
@@ -124,6 +126,9 @@ module initialisation_sauvegarde
             write(6,*) "Schema utilise: type Godunov non well-balanced"
         else if (schema == 'WB') then
             write(6,*) "Schema utilise: type Godunov well-balanced"
+        else if (schema == 'FL') then
+            write(6,*) "Schema utilise: type Godunov pour la friction lineaire"
+            write(6,*) "avec alpha = ", alpha
         end if
 
         write(6,*)
@@ -177,7 +182,7 @@ module initialisation_sauvegarde
 
         do i = 1,Ns
             x = x_deb + i*(x_fin-x_deb)/Ns
-            write(my_unit_1, *) x, W_O(1,i)+Zi(i), W_O(2,i), (W_O(1,i)+Zi(i))*W_O(2,i)
+            write(my_unit_1, *) x, W_O(1,i)+Zi(i), W_O(2,i), (W_O(1,i))*W_O(2,i), 0.5*W_O(2,i)+g*(W_O(1,i)+Zi(i))
             write(my_unit_2, *) x, Zi(i)
         end do
 

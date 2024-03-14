@@ -7,7 +7,7 @@ program systeme_SW
     ! Definition des variables
     real(rp) :: x_deb, x_fin ! dimensions du domaine en x: [x_deb,x_fin]
     integer :: Ns, Ns1, nb, dn ! nombre de cellules, nombre max de cellules si courbe de convergence, nb de nombres de cellules a tester si courbe conv, delta_n entre chaque nombre de cellules a tester different
-    real(rp) :: CFL, T_fin, date, dt, dx ! condition CFL, Temps final, date pour laquelle on calcule l'iteration, delta_t, delta_x
+    real(rp) :: CFL, T_fin, date, dt, dx ! condition CFL, Temps final, date pour laquelle on calcule l'iteration, deltat, deltax
     real(rp) :: v, Delta ! vitesse pour calculer dt avec la CFL, Delta = dt/dx pour ne pas avoir a le calculer tout le temps
     integer :: i,j ! entiers pour les boucles do
     real(rp) :: uL, uR, hL, hR ! conditions initiales
@@ -16,7 +16,7 @@ program systeme_SW
     real(rp), dimension(:,:), allocatable :: W_N ! tableau W^{n+1} des solutions
     real(rp), dimension(:,:), allocatable :: Flux ! tableau des flux numeriques
     real(rp), dimension(:), allocatable :: Zi ! tableau pour la topographie
-    real(rp), dimension(:), allocatable :: Err_u, Err_h ! tableaux pour les erreurs (si pas de graphe de convergence)
+    real(rp), dimension(:), allocatable :: Err_u, Err_h, Err_q ! tableaux pour les erreurs (si pas de graphe de convergence)
     real(rp), dimension(:,:), allocatable :: Err, Err_inf ! tableaux pour les erreurs (si graphe de convergence)
     integer, dimension(:), allocatable :: N ! tableaux pour les Ns si graphe de convergence
     character(len = 1) :: conv ! convergence ou non
@@ -25,6 +25,8 @@ program systeme_SW
     character(len = 2) :: schema ! schema utilise
     integer :: Nb_iter = 0 ! nombre d'iterations en temps
     integer :: topo ! quelle topographie on utilise
+    real(rp) :: Be ! Bernoulli pour l'erreur pour l'ecoulement fluvial
+    real(rp) :: alpha ! parametre alpha pour la friction lineaire
 
     write(6,*) '------------------------------------------'
     write(6,*) '----------- Resolution syteme ------------'
@@ -35,7 +37,7 @@ program systeme_SW
 
     ! lecture des donnees du fichier donnees.dat
     call lecture_donnees_syst('init.dat',x_deb,x_fin,Ns,CFL,T_fin,cond,&
-                                schema,uL,uR,hL,hR,topo,conv,Ns1,nb)
+                                schema,uL,uR,hL,hR,topo,conv,Ns1,nb, alpha)
 
     write(6,*)
 
@@ -188,7 +190,7 @@ program systeme_SW
         dx = (x_fin - x_deb)/Ns
 
         ! allocation memoire des tableaux
-        allocate(W_O(2,1:Ns), W_N(2,1:Ns), Flux(2,1:(Ns-1)), Err_u(Ns), Err_h(Ns), Zi(Ns))
+        allocate(W_O(2,1:Ns), W_N(2,1:Ns), Flux(2,1:(Ns-1)), Err_u(Ns), Err_h(Ns), Err_q(Ns), Zi(Ns))
         allocate(W_Om(2,1:Ns),W_Op(2,1:Ns))
 
         ! calcul topographie
@@ -226,6 +228,8 @@ program systeme_SW
                 call flux_HLL_syst(Ns, Flux, W_O, dx, dt, lambda)
             else if (schema == 'WB') then ! Godunov well-balanced
                 call flux_GDWB(Ns, Flux, W_O, Zi, dx, dt)
+            else if (schema == 'FL') then ! friction lineaire
+                call solveur_friclin(Ns, W_O, dx, dt, alpha, W_Op, lambda)
             end if
 
             ! update calcul de u_i^{n+1}
@@ -249,6 +253,11 @@ program systeme_SW
                     W_N(2,i) = W_O(2,i) - Delta*(Flux(2,i) - Flux(2,i-1)) &
                     & -0.5*dt*(terme_src_WB(W_O(1,i-1),W_O(1,i),Zi(i-1),Zi(i),dx) &
                     & +terme_src_WB(W_O(1,i),W_O(1,i+1),Zi(i),Zi(i+1),dx))
+                end do
+            else if (schema == 'FL') then
+                do i = 2,Ns-1
+                    W_N(1,i) = W_O(1,i) - Delta*(lambda*(W_O(1,i)-W_Op(1,i-1))+lambda*(W_O(1,i)-W_Op(1,i)))
+                    W_N(2,i) = W_O(2,i) - Delta*(lambda*(W_O(2,i)-W_Op(2,i-1))+lambda*(W_O(2,i)-W_Op(2,i)))
                 end do
             else
                 do i = 2,(Ns-1)
@@ -292,6 +301,7 @@ program systeme_SW
         write(6,*) 'Nombre d iterations', Nb_iter
         write(6,*)
         ! calculs d'erreurs
+        write(6,*) 'Erreurs pour le lac au repos'
         write(6,*) 'Norme L^2 de u_i^n: ', norme_L2(W_O(2,:),Ns)
         write(6,*) 'Norme infinie de u_i^n: ', norme_inf(W_O(2,:),Ns)
         do i = 1,Ns
@@ -300,13 +310,27 @@ program systeme_SW
         write(6,*) 'Norme L^2 de h_i^n+z_i-H: ', norme_L2(Err_h,Ns)
         write(6,*) 'Norme infinie de h_i^n+z_i-H: ', norme_inf(Err_h,Ns)
         write(6,*)
+        write(6,*) 'Erreurs pour l ecoulement fluvial'
+        do i =1,Ns
+            Err_q(i) = W_O(2,i) - W_O(2,1)   
+        end do
+        !write(6,*) 'Norme L^2 de q-ql: ', norme_L2(Err_q,Ns)
+        write(6,*) 'Norme infinie de q-ql: ', norme_inf(Err_q,Ns)
+        Be = 0.5*vitesse(W_O(:,1))**2+g*(W_O(1,1)+Zi(1))
+        do i =1,Ns
+            Err_q(i) = 0.5*vitesse(W_O(:,i))**2+g*(W_O(1,i)+Zi(i)) - Be
+        end do
+        !write(6,*) 'Norme L^2 de 0.5*u^2+g(h+Z): ', norme_L2(Err_q,Ns)
+        write(6,*) 'Norme infinie de 0.5*u^2+g(h+Z): ', norme_inf(Err_q,Ns)
+        write(6,*)
+
         
         ! on sauvegarde les resultats pour t = T_fin
         write(6,*) 'Enregistrement des solutions (h, u, q) dans le fichier solutions.dat'
         write(6,*) 'Enregistrement de la topographie dans le fichier topo.dat'
         call sauvegarde_syst('solutions.dat', W_O, Ns, x_deb, x_fin, Zi)
 
-        deallocate(W_O, W_N, Flux, Err_u, Err_h, Zi, W_Om, W_Op)
+        deallocate(W_O, W_N, Flux, Err_u, Err_h, Zi, W_Om, W_Op, Err_q)
     end if 
 
 end program systeme_SW

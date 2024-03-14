@@ -10,7 +10,7 @@ CONTENU DU DOSSIER:
 - src/makefile: Makefile du code
 - init.dat: fichier pour l'initialisation de variables, d'options d'exécution...
 - plot.gnu: exemple de script Gnuplot pour la visualisation des résultats
--plot_conv.gnu: exemple de script Gnuplot pour les graphiques de convergence
+- plot_conv.gnu: exemple de script Gnuplot pour les graphiques de convergence
 
 COMPILATION:
-Aller dans le dossier src puis faire make. Le fichier exécutable sera stocké dans le dossier principal du code. Les options du code sont à définir dans le fichier init.dat.
+Aller dans le dossier src puis faire make. Le fichier exécutable sera stocké dans le dossier principal du code. Les options du code sont à définir dans le fichier init.dat (nombre de cellules, temps final, conditions aux bords et aux limites, schema utilise...).
