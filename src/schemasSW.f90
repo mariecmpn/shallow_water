@@ -148,9 +148,11 @@ module schemasSW
         real(rp), dimension(2,Ns), intent(in) :: W_O
         real(rp), dimension(2,Ns), intent(out) :: W_Op
         integer :: i
-        real(rp) :: ul, ur, hl, hr, pil, pir
+        real(rp) :: ul, ur, hl, hr, pil, pir, sigma
 
-        lambda = 2.*dt/dx
+        !lambda = 2.*dt/dx
+        lambda = dx/dt*0.5
+        !W_Op(:,:) = 0._rp
         do i = 1,Ns-1
             hl = W_O(1,i)
             hr = W_O(1,i+1)
@@ -160,6 +162,10 @@ module schemasSW
             pir = hr*ur**2 + g*0.5*hr**2
 
             W_Op(1,i) = 0.5*(hl+hr) - 0.5/lambda*(hr*ur-hl*ul)
+            ! cut-off
+            sigma = min(hl,hr,0.5*(hl+hr) - 0.5/lambda*(hr*ur-hl*ul))
+            W_Op(1,i) = min(max(W_Op(1,i),sigma),2.*(0.5*(hl+hr) - 0.5/lambda*(hr*ur-hl*ul))-sigma)
+
             W_Op(2,i) = 0.5*(hl*ul+hr*ur) &
             & - 0.5/lambda*((1.-exp(-alpha*dt))/(alpha*dt))*(pir - pil) &
             & - 0.5/lambda*alpha*dx*((1.-exp(-alpha*dt))/(alpha*dt))*0.5*(hr*ur+hl*ul)
